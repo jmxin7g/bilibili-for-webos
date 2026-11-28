@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const src = fs.readFileSync(new URL('../app/app.js', import.meta.url), 'utf8');
+const begin = src.indexOf("document.querySelector('.hero-actions').addEventListener('keydown', event => {");
+const end = src.indexOf("\nloadMore.addEventListener", begin);
+let listener;
+let opened = false;
+const card = { hidden: false, focus() {}, classList: { contains: () => false } };
+const nav = { focus() { opened = true; }, classList: { contains: () => false } };
+vm.runInNewContext(src.slice(begin, end), { document: { activeElement: card, querySelector: () => ({ addEventListener: (_, cb) => listener = cb }), querySelectorAll: () => [card] }, activeNav: () => nav, heroItems: [], visibleRows: () => [], recommendRetry: { hidden: true }, focusCard() {} });
+listener({ key: 'ArrowUp', preventDefault() {} });
+assert.equal(opened, false, 'Up on hero must not open sidebar');
+console.log('PASS: hero Up stays in content');
