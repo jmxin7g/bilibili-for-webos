@@ -64,4 +64,4 @@ Homebrew v1.0.3 已在 **LG G6（webOS TV 26）** 验证启动、首页加载、
 
 [浏览源码与目录说明](source/) · [构建命令与版本源码下载](docs/BUILD.md)
 
-本项目由独立开发者维护。Bilibili 和 LG 的名称与标识归各自权利人所有。
+本项目由独立开发者维护，以 [MIT 许可证](LICENSE)开源。Bilibili 和 LG 的名称与标识归各自权利人所有，不在该许可范围内。
