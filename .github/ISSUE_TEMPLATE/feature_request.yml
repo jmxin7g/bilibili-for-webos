@@ -1,0 +1,16 @@
+name: 功能建议
+description: 想要新增或改进的功能
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望应用做到什么
+      placeholder: 例如：在播放器里支持……
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 使用场景
+      description: 你会在什么情况下用到它

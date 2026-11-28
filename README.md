@@ -3,6 +3,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jmxin7g/bilibili-for-webos/releases/latest"><img src="https://img.shields.io/github/v/release/jmxin7g/bilibili-for-webos?label=%E6%9C%80%E6%96%B0%E7%89%88" alt="最新版本"></a>
+  <a href="https://github.com/jmxin7g/bilibili-for-webos/actions/workflows/test.yml"><img src="https://github.com/jmxin7g/bilibili-for-webos/actions/workflows/test.yml/badge.svg" alt="单元测试"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/jmxin7g/bilibili-for-webos?label=%E8%AE%B8%E5%8F%AF%E8%AF%81" alt="MIT 许可证"></a>
+  <img src="https://img.shields.io/badge/webOS%20TV-26-a50034" alt="webOS TV 26">
+</p>
+
+<p align="center">
   <strong>用遥控器在 LG 电视上逛 B 站、选集和看视频。</strong><br>
   从推荐和搜索找到想看的内容，扫码后也能接着看自己的关注、历史和收藏。
 </p>
@@ -54,11 +61,18 @@ Bilibili for WebOS 是一个面向 **LG webOS 电视**的第三方哔哩哔哩�
 
 > **Homebrew 版** 与标准版使用不同的应用 ID，可以同时安装，首次使用需要重新扫码。[下载 Homebrew 版](https://github.com/jmxin7g/bilibili-for-webos/releases/tag/homebrew-v1.0.3) · [社区目录进度](https://github.com/webosbrew/apps-repo/issues/385)
 
+## 隐私与账号
+
+- **登录信息只留在电视上。** 扫码后，登录 Cookie 由应用自带的服务保存在电视本机，不会上传到本项目或其他第三方服务器。
+- **只连接哔哩哔哩。** 应用直接访问哔哩哔哩的接口和视频 CDN，不经过中转服务器。
+- **观看进度存在本机。** 首页「继续观看」使用电视本地记录；登录后的观看历史、收藏等来自你的哔哩哔哩账号。
+- **随时退出。** 在 **设置** 中选择 **退出当前账号**，会删除这台电视上保存的该账号登录信息。
+
 ## 兼容性与反馈
 
 Homebrew v1.0.3 已在 **LG G6（webOS TV 26）** 验证启动、首页加载、游客模式 480p 播放和二维码显示。其他机型和画质的表现取决于片源、账号及电视解码能力。
 
-遇到问题请到 [GitHub Issues](https://github.com/jmxin7g/bilibili-for-webos/issues/new) 附上电视型号、webOS 版本、应用版本和复现步骤。
+遇到问题请[提交问题反馈](https://github.com/jmxin7g/bilibili-for-webos/issues/new/choose)，表单会提示你填写电视型号、webOS 版本、应用版本和复现步骤。
 
 ## 从源码构建
 
