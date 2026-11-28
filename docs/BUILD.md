@@ -1,19 +1,21 @@
 # 获取源码与构建电视安装包
 
-[返回项目首页](../README.md#bilibili-for-webos)
+[返回项目首页](../README.md)
 
-## 下载对应版本的源码
+## 获取源码
+
+仓库的 [`source/`](../source/) 提供标准版 v1.0.3 的可浏览源码。要复现特定 Release，请下载下表中的对应附件。
 
 | 版本 | 对应的源码快照 |
 | --- | --- |
 | 标准版 v1.0.3 | [标准版源码 ZIP](https://github.com/jmxin7g/bilibili-for-webos/releases/download/v1.0.3/bilibili-for-webos-v1.0.3-source.zip) |
 | Homebrew v1.0.3 | [Homebrew 版源码 ZIP](https://github.com/jmxin7g/bilibili-for-webos/releases/download/homebrew-v1.0.3/bilibili-for-webos-homebrew-v1.0.3-source.zip) |
 
-请使用上表列出的附件。GitHub 在每个 Release 下自动生成的 **Source code (zip)** 和 **Source code (tar.gz)** 打包的是该标签下的仓库内容。
+GitHub 自动生成的 **Source code (zip)** 和 **Source code (tar.gz)** 打包的是标签当时的仓库内容。上表链接通向对应安装包所用的源码附件。
 
 ## 构建
 
-安装 **Node.js 20.12.2 或更高版本**和 **LG webOS CLI**。解压源码附件后，在包含 `package.json` 的目录运行：
+安装 **Node.js 20.12.2 或更高版本**和 **LG webOS CLI**。解压源码附件后，在包含 `package.json` 的目录运行下列命令。通过仓库获取时，先进入 `source/`。
 
 ```sh
 npm ci
@@ -21,7 +23,7 @@ npm test
 npm run package:tv
 ```
 
-IPK 会生成在 `output/tv-build/`。在电脑上开发预览时，运行 `npm start`，再打开 `http://127.0.0.1:8769/`。
+IPK 会生成在 `output/tv-build/`。在电脑上预览时，运行 `npm start`，再打开 `http://127.0.0.1:8769/`。
 
 | 目录 | 内容 |
 | --- | --- |
