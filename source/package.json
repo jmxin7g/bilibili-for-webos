@@ -1,0 +1,44 @@
+{
+  "name": "independent-webos-playback-prototype",
+  "version": "1.0.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:simulator": "node tools/simulator-test.mjs simulator-smoke.mjs",
+    "test:simulator:error": "node tools/simulator-test.mjs simulator-error.mjs",
+    "test:simulator:cancel": "node tools/simulator-test.mjs simulator-cancel.mjs",
+    "test:simulator:popular": "node tools/simulator-test.mjs simulator-popular.mjs",
+    "test:simulator:tops": "node tools/simulator-test.mjs simulator-page-top.mjs",
+    "test:simulator:regions": "node tools/simulator-test.mjs simulator-region-top.mjs",
+    "test:simulator:ui": "node tools/simulator-test.mjs simulator-ui.mjs",
+    "test:simulator:startup": "node tools/simulator-test.mjs simulator-startup.mjs",
+    "test:simulator:player-back": "node tools/simulator-test.mjs simulator-player-back.mjs",
+    "test:simulator:hero": "node tools/simulator-test.mjs simulator-hero-play.mjs",
+    "test:simulator:resume": "node tools/simulator-test.mjs simulator-resume.mjs",
+    "test:simulator:resume-cancel": "node tools/simulator-test.mjs simulator-resume-cancel.mjs",
+    "test:simulator:auto": "node tools/simulator-test.mjs simulator-auto.mjs",
+    "test:simulator:hdr": "node tools/simulator-test.mjs simulator-hdr.mjs",
+    "start": "node server.mjs",
+    "simulator": "ares-launch -s 26 -sp /Applications output/simulator-build/app",
+    "simulator:dev": "ares-launch -s 26 -sp /Applications app",
+    "package:tv": "node tools/package-tv.mjs",
+    "prepare:simulator-service": "node tools/prepare-simulator.mjs",
+    "test:simulator:refresh": "node tools/simulator-test.mjs simulator-refresh.mjs",
+    "test:simulator:player-labels": "node tools/simulator-test.mjs simulator-player-labels.mjs",
+    "test:simulator:all": "node tools/simulator-all.mjs",
+    "test:simulator:walkthrough": "node tools/simulator-test.mjs simulator-walkthrough.mjs",
+    "test:simulator:background": "node tests/simulator-background.mjs",
+    "test:simulator:back-top": "node tools/simulator-test.mjs simulator-back-top.mjs",
+    "test:simulator:hero-keys": "node tools/simulator-test.mjs simulator-hero-keys.mjs",
+    "test:simulator:left-nav": "node tools/simulator-test.mjs simulator-left-nav.mjs",
+    "test:simulator:library-cache": "node tools/simulator-test.mjs simulator-library-cache.mjs"
+  },
+  "engines": {
+    "node": ">=20.12.2"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4",
+    "shaka-player": "5.2.13"
+  }
+}

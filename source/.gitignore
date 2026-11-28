@@ -1,0 +1,6 @@
+output/
+.DS_Store
+node_modules/
+.local/
+app/service-token.js
+app/vendor/
