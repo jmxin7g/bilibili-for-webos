@@ -2,7 +2,7 @@
 
 [返回项目首页](../README.md) · [标准版下载](https://github.com/jmxin7g/bilibili-for-webos/releases/latest) · [Homebrew 版下载](https://github.com/jmxin7g/bilibili-for-webos/releases/tag/homebrew-v1.0.3)
 
-开始前，请把电脑和 LG 电视连到**同一个局域网**，并在电脑安装 [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop/releases/latest)。下图标出要找的菜单和字段，具体位置可能随版本变化。
+开始前，请把电脑和 LG 电视连到**同一个局域网**，并在电脑安装 [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop/releases/latest)。电脑端配图为 Dev Manager 实际截图。
 
 ## 先下载 IPK
 
@@ -15,29 +15,37 @@
 
 ## 1. 在电视开启 Developer Mode
 
-![电视端操作图，标出 Dev Mode Status、Key Server、IP Address 和 Passphrase](screenshots/install/01-developer-mode.png)
+![电视端操作示意图，标出 Dev Mode Status、Key Server、IP Address 和 Passphrase](screenshots/install/01-developer-mode.png)
 
 1. 在 LG 电视的应用商店搜索并安装 **Developer Mode**，打开后用 LG Developer 账号登录。
 2. 把 **Dev Mode Status** 切到 **ON**，按提示重启电视。
-3. 重启后再次打开 **Developer Mode**，确认 **Dev Mode Status** 仍然开启。打开 **Key Server**，记下屏幕上显示的电视 IP 和 **Passphrase**。
-   
+3. 重启后再次打开 **Developer Mode**，确认 **Dev Mode Status** 仍然开启。打开 **Key Server**，记下电视 IP 和 **Passphrase**。
+
 [查看 LG 官方电视界面截图和配对说明](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app)
 
 ## 2. 在电脑上配对电视
 
-![电脑端配对图，标出 Use Developer Mode、Address、配对口令和 Finish](screenshots/install/02-pair-tv.png)
+1. 打开 **webOS Dev Manager**，进入左下角 **Settings → Devices → Add new device…**。选择 **Use Developer Mode**，点击 **Next**。
 
-1. 打开 **webOS Dev Manager**，添加设备，选择 **Use Developer Mode**。
-2. 在 **Address** 填写电视显示的 IP。选择 **Dev Mode** 认证，按提示输入电视上显示的 **Passphrase**。
-3. 点击 **Finish**。配对成功后，可以在 Dev Manager 的设备菜单里选到这台电视。
+<details>
+<summary>查看实际的 Connection Mode 界面</summary>
+
+![Connection Mode 向导，选中 Use Developer Mode，右下角是 Next](https://github.com/user-attachments/assets/aac75088-c86e-439f-85cc-155ed3a85a49)
+
+</details>
+
+2. 到 **Setup Device** 页面后，在 **Address** 填写你自己电视的 IP，在 **Dev Mode passphrase** 填写电视上显示的口令，注意大小写。用户名 **prisoner** 和端口 **9922** 保持默认。
+3. 点击右下角 **Finish**。配对成功后，可以在 Dev Manager 的设备菜单里选到这台电视。
+
+![Setup Device 的实际空白配对表单，包含 Address、Dev Mode passphrase 和 Finish](https://github.com/user-attachments/assets/e870575d-7659-4156-a9c7-f2f106ad6794)
 
 ## 3. 安装 IPK 并启动
 
-![电脑端安装图，标出设备选择、Installed、Install 与标准版 IPK 文件](screenshots/install/03-install-ipk.png)
+1. 在 Dev Manager 选择电视，进入左侧 **Apps**，切到 **Installed**。
+2. 点右上角 **Install**，在文件选择窗口选中已下载的 `.ipk`，点击 **打开**。
+3. 等应用出现在 **Installed** 列表里，再到电视主页打开 **bilibili**。截图里并行安装了两个版本，你只需要安装一个。
 
-1. 在 Dev Manager 选择这台电视，进入 **Apps → Installed**。
-2. 点击 **Install**，在文件选择窗口选中第一步下载的 `.ipk`，然后点 **打开**。
-3. 等应用出现在 **Installed** 列表里，再到电视主页打开 **bilibili**。
+![Dev Manager 的实际应用页，左侧是 Apps，上方是 Installed，右上角是 Install](https://github.com/user-attachments/assets/4f18a295-39cc-48d3-be2a-8d0751f6d0b2)
 
 ## 4. 第一次使用
 
