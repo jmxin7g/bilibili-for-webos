@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 图文安装指南
+    url: https://github.com/jmxin7g/bilibili-for-webos/blob/main/docs/INSTALL.md
+    about: 安装或配对电视遇到问题，可以先对照这份指南

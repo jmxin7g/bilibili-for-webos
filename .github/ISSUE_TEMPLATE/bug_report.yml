@@ -1,0 +1,64 @@
+name: 问题反馈
+description: 安装、登录、播放或界面出现问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请不要在这里贴出 Cookie、Developer Mode 口令或二维码截图。
+  - type: input
+    id: tv-model
+    attributes:
+      label: 电视型号
+      description: 电视「设置 → 常规 → 关于此电视」里可以看到
+      placeholder: 例如 OLED65G6PJB
+    validations:
+      required: true
+  - type: input
+    id: webos-version
+    attributes:
+      label: webOS 版本
+      placeholder: 例如 webOS TV 26 / webOS 6.0
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: 应用版本渠道
+      options:
+        - 标准版（com.jinmx.independent.playback）
+        - Homebrew 版（io.github.jmxin7g.bilibili）
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: 应用版本号
+      description: 应用内「设置 → 关于」，或 IPK 文件名里的版本号
+      placeholder: 例如 1.0.3
+    validations:
+      required: true
+  - type: dropdown
+    id: login
+    attributes:
+      label: 是否已登录
+      options:
+        - 未登录（游客）
+        - 已扫码登录
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开应用，进入……
+        2. 选择……
+        3. 出现……
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 实际看到了什么，期望是什么
+      description: 有视频可以附上 BV 号；可以拍照或截图（请避开二维码和个人信息）
+    validations:
+      required: true
