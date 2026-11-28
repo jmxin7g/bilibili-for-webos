@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>bilibili</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="service-token.js" defer></script>
+  <script src="webOSTVjs-1.2.13/webOSTV.js" defer></script>
+  <script src="vendor/shaka-player.compiled.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="search-requests.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="startup-screen" role="status" aria-label="正在打开 bilibili">
+    <img class="startup-wordmark" src="bilibili-wordmark-white.svg" alt="bilibili">
+  </div>
+  <!-- Liquid Glass refraction: the displacement map is drawn by app.js to fit each glass element. -->
+  <svg id="glass-filters" width="0" height="0" aria-hidden="true" focusable="false">
+  </svg>
+  <div id="home">
+    <nav id="sidebar" aria-label="主要入口">
+      <button id="nav-profile" class="profile" aria-label="切换用户"><span id="nav-avatar" aria-hidden="true"></span><span id="nav-name" aria-live="polite">未登录</span><span id="nav-clock"></span><span id="nav-hint">切换账号</span></button>
+      <button class="nav-item" data-page="search"><svg viewBox="1.875 1.875 21.25 21.25" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span>搜索</span></button>
+      <button class="nav-item" data-page="browse"><svg viewBox="1.375 1.375 21.25 21.25" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/></svg><span>推荐</span></button>
+      <button class="nav-item" data-page="popular"><svg viewBox="1.1065 0.763 22.3703 22.3703" aria-hidden="true"><path d="M13 3c1 5-3 5-2 9 2-1 3-3 3-5 4 4 6 7 4 11-3 5-11 3-12-2-1-4 2-6 3-8 0 3 1 4 2 4"/></svg><span>热门</span></button>
+      <button class="nav-item" data-page="following"><svg viewBox="1.1875 0.6875 23.125 23.125" aria-hidden="true"><circle cx="10" cy="8.5" r="3.5"/><path d="M3.5 19.5c.8-3.4 3.3-5.5 6.5-5.5s5.7 2.1 6.5 5.5"/><path d="M19 7v6M16 10h6"/></svg><span>关注</span></button>
+      <button class="nav-item" data-page="cloud-history"><svg viewBox="2.0584 2.0617 19.3833 19.3833" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4h4"/><path d="M12 8v4.5l3 1.8"/></svg><span>历史</span></button>
+      <button class="nav-item" data-page="favorites"><svg viewBox="1.875 1.425 20.25 20.25" aria-hidden="true"><path d="m12 3.8 2.5 5.1 5.6.8-4 4 .9 5.6-5-2.7-5 2.7.9-5.6-4-4 5.6-.8z"/></svg><span>收藏</span></button>
+      <button class="nav-item" data-page="regions"><svg viewBox="2 2 20 20" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>分区</span></button>
+      <button class="nav-item" data-page="settings"><svg viewBox="0.125 0.125 23.75 23.75" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg><span>设置</span></button>
+    </nav>
+    <div id="top-fade" aria-hidden="true"></div>
+    <div id="nav-pill" aria-hidden="true"><span class="pill-icon"></span><span class="pill-name"></span></div>
+    <div id="ambient" aria-hidden="true"><canvas width="64" height="36"></canvas><canvas width="64" height="36"></canvas></div>
+    <main id="pages">
+      <section class="page" id="page-browse" aria-labelledby="browse-heading">
+        <section id="hero" aria-labelledby="browse-heading">
+          <img id="hero-image" alt="">
+          <video id="hero-video" muted playsinline aria-hidden="true"></video>
+          <div class="hero-info">
+            <h1 id="browse-heading">今天，看点什么。</h1>
+            <p id="hero-meta"></p>
+            <div class="hero-actions"><button id="hero-play" class="round-action">播放</button><button id="hero-later" class="round-action" hidden aria-label="添加到稍后再看" data-saved="false"></button></div>
+            <p id="hero-status" role="status"></p>
+          </div>
+          <div id="hero-dots" aria-hidden="true"></div>
+        </section>
+        <section class="shelf" id="history-shelf" hidden aria-labelledby="history-shelf-title"><h2 id="history-shelf-title">继续观看</h2><div class="row" id="history-row"></div></section>
+        <section class="shelf" id="recommend" aria-labelledby="recommend-title"><h2 id="recommend-title">为你推荐</h2><p id="recommend-status" class="shelf-status" role="status"></p><div class="row" id="recommend-grid"></div><button id="recommend-retry" hidden>重试加载</button></section>
+
+      </section>
+      <section class="page" id="page-popular" hidden aria-labelledby="popular-heading">
+        <section class="shelf" id="browse"><h1 id="popular-heading" class="visually-hidden">热门</h1><p id="browse-status" class="shelf-status" role="status"></p><div class="row" id="video-grid"></div><button id="load-more" hidden>加载更多</button></section>
+      </section>
+      <section class="page" id="page-search" hidden aria-labelledby="search-heading">
+        <h1 id="search-heading" class="visually-hidden">搜索</h1>
+        <form id="search-form" aria-label="搜索视频"><label for="search-input">搜索视频</label><div id="search-field" tabindex="0" role="button" aria-label="搜索内容，确认键用系统键盘输入"><input id="search-input" tabindex="-1" placeholder="视频、UP 主及更多内容" autocomplete="off"></div><button type="submit">搜索</button></form>
+        <div class="search-layout">
+          <div id="search-keys" role="group" aria-label="屏幕键盘">
+            <div class="key-modes"><button type="button" data-mode="letters" aria-pressed="true">拼音</button><button type="button" data-mode="digits" aria-pressed="false">123</button></div>
+            <div class="key-grid"></div>
+            <div class="key-actions"><button type="button" data-action="case" aria-label="切换大小写">Aa</button><button type="button" data-action="space">空格</button><button type="button" data-action="delete" aria-label="删除">⌫</button><button type="button" data-action="clear">清除</button></div>
+          </div>
+          <div class="search-main">
+            <div id="search-suggest" hidden></div>
+            <p id="search-empty" hidden>用左侧键盘输入拼音或字母</p>
+            <section id="search-trending" hidden aria-labelledby="trending-title"><h2 id="trending-title">热门搜索</h2><ol id="trending-list"></ol><h2 id="search-popular-title" hidden>大家都在看</h2><div class="row" id="search-popular"></div></section>
+            <section id="search-results" hidden aria-labelledby="search-title"><h2 id="search-title">最佳结果</h2><p id="search-status" role="status"></p><div id="search-grid"></div><p id="search-error" class="inline-error" role="status" hidden></p><button id="search-more" hidden>加载更多结果</button></section>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="page-library" hidden aria-labelledby="library-heading">
+        <h1 id="library-heading">关注</h1>
+        <p id="library-status" class="shelf-status" role="status"></p>
+        <button id="library-login" hidden>前往设置扫码登录</button>
+        <p id="library-empty" class="shelf-status" hidden></p>
+        <div class="library-layout">
+          <div class="library-content">
+            <section class="shelf" id="following-shelf" hidden aria-labelledby="following-title"><h2 id="following-title">关注</h2><div class="row" id="following-row"></div></section>
+            <section class="shelf" id="later-shelf" hidden aria-labelledby="later-title"><h2 id="later-title">稍后再看</h2><div class="row" id="later-row"></div></section>
+            <section class="shelf" id="cloud-history-shelf" hidden aria-labelledby="cloud-history-title"><h2 id="cloud-history-title">观看历史</h2><div class="row" id="cloud-history-row"></div></section>
+            <section class="shelf" id="favorites-shelf" hidden aria-labelledby="favorites-title"><h2 id="favorites-title">收藏</h2><div class="row folder-row" id="folder-row"></div><div class="row" id="favorite-row"></div></section>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="page-regions" hidden aria-labelledby="regions-heading">
+        <h1 id="regions-heading">分区</h1>
+        <div class="row folder-row" id="region-tabs"></div>
+        <div id="region-loading" aria-hidden="true" hidden></div>
+        <p id="region-status" class="shelf-status" role="status"></p>
+        <button id="region-retry" hidden>重试加载</button>
+        <div id="region-grid" aria-busy="false"></div>
+      </section>
+      <section class="page" id="page-settings" hidden aria-labelledby="settings-heading">
+        <div class="settings-layout">
+          <div class="settings-hero">
+            <svg class="settings-icon settings-person" data-group="账号" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="none" stroke="#505052" stroke-width="7"/><circle cx="50" cy="39" r="15" fill="#505052"/><path d="M22 79c6-14 16-20 28-20s22 6 28 20a42 42 0 0 1-56 0z" fill="#505052"/></svg><svg class="settings-icon settings-gear" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gear-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d1d1d6"/><stop offset="1" stop-color="#8e8e93"/></linearGradient></defs><path fill="url(#gear-fill)" stroke="url(#gear-fill)" stroke-width="5" stroke-linejoin="round" fill-rule="evenodd" transform="translate(5 5) scale(.9)" d="M44.58 11.88 L45.91 4.18 A46.0 46.0 0 0 1 54.09 4.18 L55.42 11.88 A38.5 38.5 0 0 1 64.36 14.28 L69.37 8.28 A46.0 46.0 0 0 1 76.45 12.37 L73.76 19.70 A38.5 38.5 0 0 1 80.30 26.24 L87.63 23.55 A46.0 46.0 0 0 1 91.72 30.63 L85.72 35.64 A38.5 38.5 0 0 1 88.12 44.58 L95.82 45.91 A46.0 46.0 0 0 1 95.82 54.09 L88.12 55.42 A38.5 38.5 0 0 1 85.72 64.36 L91.72 69.37 A46.0 46.0 0 0 1 87.63 76.45 L80.30 73.76 A38.5 38.5 0 0 1 73.76 80.30 L76.45 87.63 A46.0 46.0 0 0 1 69.37 91.72 L64.36 85.72 A38.5 38.5 0 0 1 55.42 88.12 L54.09 95.82 A46.0 46.0 0 0 1 45.91 95.82 L44.58 88.12 A38.5 38.5 0 0 1 35.64 85.72 L30.63 91.72 A46.0 46.0 0 0 1 23.55 87.63 L26.24 80.30 A38.5 38.5 0 0 1 19.70 73.76 L12.37 76.45 A46.0 46.0 0 0 1 8.28 69.37 L14.28 64.36 A38.5 38.5 0 0 1 11.88 55.42 L4.18 54.09 A46.0 46.0 0 0 1 4.18 45.91 L11.88 44.58 A38.5 38.5 0 0 1 14.28 35.64 L8.28 30.63 A46.0 46.0 0 0 1 12.37 23.55 L19.70 26.24 A38.5 38.5 0 0 1 26.24 19.70 L23.55 12.37 A46.0 46.0 0 0 1 30.63 8.28 L35.64 14.28 A38.5 38.5 0 0 1 44.58 11.88 Z M33.00 50 A17 17 0 1 0 67.00 50 A17 17 0 1 0 33.00 50 Z"/></svg>
+            <h1 id="settings-heading">设置</h1>
+            <p>账号、播放与弹幕</p>
+          </div>
+          <div class="settings-list">
+            <h2 class="group-title">账号</h2>
+            <div class="account"><span id="account-status" role="status">正在检查登录状态…</span><div id="account-list"></div><button id="login" class="row-button">扫码登录</button><button id="add-account" class="row-button" hidden>添加账号</button><button id="logout" class="row-button" hidden>退出当前账号</button></div>
+            <h2 class="group-title">播放</h2>
+            <form id="form">
+              <label class="setting-row" for="quality"><span>默认画质</span><select id="quality"><option value="auto">自动</option><option value="qn:127">8K 超高清</option><option value="qn:126">杜比视界</option><option value="qn:125">HDR 真彩</option><option value="qn:120">4K 超高清</option><option value="qn:116">1080P 60帧</option><option value="qn:112">1080P 高码率</option><option value="1080">1080P 高清</option><option value="qn:74">720P 60帧</option><option value="720">720P 准高清</option><option value="480">480P 标清</option><option value="360">360P 流畅</option></select></label>
+              <input id="bvid" type="hidden" value="BV1fwEwzeEPp">
+              <button id="start" type="submit" hidden>播放</button>
+            </form>
+            <button class="row-button option-row" data-setting="autoplay"><span>自动连播</span><span class="value"></span></button>
+            <button class="row-button option-row" data-setting="subtitles"><span>字幕</span><span class="value"></span></button>
+            <p class="note" id="quality-note">“自动”根据实际下载速度动态升降画质。默认画质作为上限，不可用时依次选择更低的可用档位；播放菜单中手动选择的档位保持固定。</p>
+            <h2 class="group-title">弹幕</h2>
+            <button class="row-button option-row" data-setting="danmaku"><span>显示弹幕</span><span class="value"></span></button>
+            <button class="row-button option-row" data-setting="dm-opacity"><span>不透明度</span><span class="value"></span></button>
+            <button class="row-button option-row" data-setting="dm-size"><span>字号</span><span class="value"></span></button>
+            <button class="row-button option-row" data-setting="dm-speed"><span>速度</span><span class="value"></span></button>
+            <button class="row-button option-row" data-setting="dm-area"><span>显示区域</span><span class="value"></span></button>
+            <h2 class="group-title">观看记录</h2>
+            <button id="clear-history" class="row-button">清除本机观看记录</button>
+            <h2 class="group-title">关于</h2>
+            <div class="info-row"><span>名称</span><span id="about-name">bilibili</span></div>
+            <div class="info-row"><span>版本</span><span id="about-version">1.0.3</span></div>
+          </div>
+        </div>
+      </section>
+      <p id="home-status" role="status"></p>
+      <button id="home-retry" hidden>重试播放</button>
+      <footer>方向键移动 · 确认键选择 · 返回键回到侧栏</footer>
+    </main>
+  </div>
+  <section id="detail" hidden aria-labelledby="detail-title">
+    <div class="detail-backdrop" aria-hidden="true"><img id="detail-image" alt=""><img id="detail-blur" alt=""></div>
+    <p id="detail-mini-title" aria-hidden="true"></p>
+    <div class="detail-hero">
+      <div class="detail-info">
+        <h1 id="detail-title"></h1>
+        <p id="detail-meta"></p>
+        <p id="detail-desc"></p>
+        <p id="detail-facts"></p>
+        <div class="detail-actions">
+          <button id="detail-play" class="round-action">播放</button>
+          <button id="detail-episodes" class="round-action" type="button" hidden aria-label="选集" aria-controls="detail-pages">
+            <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+              <path d="M20 14h15M20 24h15M20 34h15M13 14h.1M13 24h.1M13 34h.1"/>
+            </svg>
+          </button>
+          <button id="detail-later" class="round-action" hidden aria-label="添加到稍后再看" data-saved="false"></button>
+        </div>
+        <p id="detail-status" role="status"></p>
+      </div>
+      <dl id="detail-credits"></dl>
+    </div>
+    <section class="shelf" id="detail-pages-shelf" hidden aria-labelledby="detail-pages-title"><h2 id="detail-pages-title">选集</h2><div class="row folder-row" id="detail-pages"></div></section>
+    <section class="shelf" id="detail-related-shelf" hidden aria-labelledby="detail-related-title"><h2 id="detail-related-title">相关推荐</h2><div class="row" id="detail-related"></div></section>
+    <section class="shelf" id="detail-people-shelf" hidden aria-labelledby="detail-people-title"><h2 id="detail-people-title">UP 主与合作</h2><div class="row" id="detail-people"></div></section>
+    <section class="shelf" id="detail-about" hidden aria-labelledby="detail-about-title"><h2 id="detail-about-title">关于</h2><div class="row" id="detail-about-cards"></div></section>
+    <section id="detail-info-grid" hidden tabindex="-1" aria-label="信息、数据和视频"></section>
+  </section>
+  <section id="up-page" hidden tabindex="-1" aria-labelledby="up-name">
+    <div class="up-header"><img id="up-face" alt=""><div><h1 id="up-name"></h1><p id="up-meta"></p><p id="up-sign"></p></div></div>
+    <p id="up-status" class="shelf-status" role="status"></p>
+    <div id="up-grid"></div>
+    <button id="up-retry" hidden>重试加载</button>
+  </section>
+  <dialog id="exit-dialog" class="alert" aria-labelledby="exit-title" aria-describedby="exit-message"><h2 id="exit-title">退出bilibili？</h2><p id="exit-message">观看进度已保存，下次打开可以继续观看。</p><div class="alert-actions"><button id="exit-confirm" class="destructive">退出</button><button id="exit-cancel">取消</button></div></dialog>
+  <dialog id="profile-picker" aria-labelledby="profile-picker-title"><p class="picker-pill" aria-hidden="true"><svg class="chevron" viewBox="0 0 8 13"><path d="M6.5 1.5 1.5 6.5l5 5"/></svg><svg class="pill-person" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="10" r="3.2"/><path d="M6.2 18.4c1.4-2.4 3.4-3.6 5.8-3.6s4.4 1.2 5.8 3.6"/></svg>切换账号</p><h2 id="profile-picker-title">谁在观看？</h2><div id="profile-choices"></div></dialog>
+  <dialog id="login-dialog" aria-labelledby="login-title"><div class="login-text"><div class="add-intro-art login-art" aria-hidden="true"><span class="bubble b1"></span><span class="bubble b2"></span><span class="bubble b3"></span><span class="bubble b4"></span><span class="bubble b5"></span><span class="bubble b6"></span><span class="bubble main"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-4 4.1-6 7.5-6s6.3 2 7.5 6"/></svg></span></div><h2 id="login-title">登录 Bilibili</h2><p class="login-lead">登录后可以在这台电视上查看关注更新、稍后再看、观看历史和收藏，并使用 720P 以上画质。添加的账号可以随时在侧栏切换。</p><p class="login-note">扫码确认后，登录状态只保存在这台 Mac 上，用于本机请求 Bilibili 接口，可以随时在设置中退出。</p></div><div class="login-card"><div class="login-qr"><canvas id="qr-image" role="img" aria-label="Bilibili 登录二维码" hidden></canvas></div><p class="login-scan">扫描二维码以继续</p><p class="login-how">打开 Bilibili 手机客户端，扫描上方二维码，并在手机上确认登录。</p><p id="qr-status" role="status">正在生成二维码…</p><p class="login-or"><span>或</span></p><div class="login-actions"><button id="qr-refresh">刷新二维码</button><button id="qr-close" class="text-button">取消</button></div></div></dialog>
+  <section id="player" hidden tabindex="-1" aria-label="视频播放器">
+    <video id="video" playsinline preload="auto"></video>
+    <div id="danmaku-layer" aria-hidden="true"></div>
+    <p id="subtitle-text" hidden></p>
+    <div class="overlay">
+      <div id="controls">
+        <button id="back" aria-label="返回">返回</button>
+        <button id="backward" aria-label="后退 10 秒">后退 10 秒</button>
+        <button id="toggle" data-state="playing">暂停</button>
+        <button id="forward" aria-label="前进 10 秒">前进 10 秒</button>
+        <button id="player-retry" hidden>重试播放</button>
+        <button id="replay" hidden>从头重播</button>
+        <button id="play-next" hidden></button>
+        <div class="player-options"><button id="speed">倍速 1×</button><div class="quality-control"><button id="quality-switch" aria-expanded="false" aria-controls="quality-menu">画质</button><div id="quality-menu" hidden aria-label="画质"><div id="quality-choices"></div></div></div><button id="subtitle-toggle" hidden>字幕 关</button><button id="danmaku-toggle">弹幕 开</button></div>
+      </div>
+      <div class="info">
+        <p class="eyebrow" id="source"></p>
+        <h2 id="title"></h2>
+        <p id="player-status" role="status">准备播放</p>
+        <div class="scrubber"><progress id="progress" value="0" max="1"></progress><i id="playhead" aria-hidden="true"></i><div id="scrub-preview" hidden aria-hidden="true"><div id="scrub-thumb"><img alt=""></div><span id="scrub-time"></span></div></div>
+        <div class="transport"><span id="time">00:00</span><span id="time-left"></span></div>
+      </div>
+    </div>
+  </section>
+  <template id="dolby-vision-icon"><svg class="dolby-vision-icon" viewBox="0 0 32 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1 3h5a9 9 0 0 1 0 18H1zm4 4v10h1a5 5 0 0 0 0-10zM31 3h-5a9 9 0 0 0 0 18h5zm-4 4v10h-1a5 5 0 0 1 0-10z"/></svg></template>
+
+</body>
+</html>

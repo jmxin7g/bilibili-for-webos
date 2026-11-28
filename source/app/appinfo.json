@@ -1,0 +1,13 @@
+{
+  "id": "com.jinmx.independent.playback",
+  "version": "1.0.3",
+  "vendor": "Independent playback prototype",
+  "type": "web",
+  "main": "index.html",
+  "title": "bilibili",
+  "icon": "icon-bilibili-solid.png",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "largeIcon": "large-icon-bilibili-solid.png",
+  "iconColor": "#ff3071"
+}

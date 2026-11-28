@@ -1,0 +1,803 @@
+/* Visual language modelled on the Apple TV app for LG webOS: black canvas, collapsible icon sidebar,
+   full-bleed hero, horizontal shelves, borderless cards that lift on focus, white pill buttons. */
+:root {
+  color-scheme: dark;
+  font-family: sans-serif;
+  color: #fff;
+  background: #000;
+  --secondary: rgba(235, 235, 245, .6);
+  --tertiary: rgba(235, 235, 245, .35);
+  --fill: rgba(255, 255, 255, .12);
+  --fill-strong: rgba(255, 255, 255, .2);
+  --radius: .9vw;
+  --gutter: 6vw;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #000; }
+[hidden] { display: none !important; }
+#startup-screen {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #000;
+}
+#startup-screen .startup-wordmark {
+  display: block; width: 18.229167vw; height: auto;
+}
+button { cursor: pointer; font: inherit; color: inherit; }
+:focus { outline: none; }
+
+/* Buttons: translucent pills; the focused one turns white and grows slightly. */
+button, input, select {
+  font-size: 1.35vw; border: 0; border-radius: 999px; padding: .85vw 2vw;
+  background: var(--fill); color: #fff; transition: transform .15s ease, background-color .15s ease;
+}
+button:focus, select:focus { background: #fff; color: #000; transform: scale(1.06); box-shadow: 0 .8vw 2vw rgba(0, 0, 0, .5); }
+button:disabled { opacity: .45; }
+input { border-radius: 1vw; padding: 1.1vw 1.6vw; }
+input:focus { background: var(--fill-strong); box-shadow: 0 0 0 .25vw #fff; }
+select { border-radius: 1vw; padding: .85vw 1.4vw; }
+label { font-size: 1.15vw; color: var(--secondary); width: 100%; }
+form { display: flex; gap: 1.2vw; align-items: center; flex-wrap: wrap; }
+
+/* Sidebar: hidden while browsing; Back, or Left/Up at the edge of a page, slides in a floating translucent
+   panel with the profile on top. Right or selecting an entry closes it. Only 搜索 carries an icon. */
+#home { position: relative; min-height: 100vh; }
+#sidebar {
+  position: fixed; z-index: 10; top: 3vh; bottom: 3vh; left: 1.6vw; width: 22vw;
+  display: flex; flex-direction: column; gap: .6vh; padding: 3vh 1.2vw;
+  border-radius: 1.8vw; background: rgba(44, 44, 48, .78); backdrop-filter: blur(40px) saturate(1.6);
+  box-shadow: 0 2vw 5vw rgba(0, 0, 0, .55);
+  transform: translateX(-120%); opacity: 0; transition: transform .25s ease, opacity .25s ease, box-shadow .25s ease;
+}
+#sidebar:focus-within { transform: none; opacity: 1; box-shadow: 0 2vw 5vw rgba(0, 0, 0, .55), 0 0 0 100vmax rgba(0, 0, 0, .45); }
+.profile { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 1vw; align-items: center; margin: 0 0 3vh; padding: .6vw; border-radius: 1.2vw; background: transparent; text-align: left; color: #fff; transition: transform .08s ease-out, background-color .08s ease-out; }
+/* The profile is focusable, like Apple TV's profile entry at the top of the sidebar. */
+.profile:focus { background: #fff; color: #000; transform: scale(1.04); box-shadow: 0 .6vw 1.6vw rgba(0, 0, 0, .35); transition: transform .06s ease-out; }
+.profile:focus #nav-clock { color: #3a3a3c; }
+.profile:focus #nav-avatar { box-shadow: 0 0 0 .2vw rgba(0, 0, 0, .15); }
+#nav-avatar { grid-row: 1 / 3; width: 3.4vw; height: 3.4vw; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #8e8e93, #48484a); font-size: 1.4vw; font-weight: 600; }
+#nav-avatar svg { width: 58%; height: 58%; fill: rgba(255, 255, 255, .85); }
+/* Account pictures fill their circle; the initial underneath shows until (or if never) the picture loads. */
+#nav-avatar, .profile-choice .avatar, .account-avatar { position: relative; }
+:is(#nav-avatar, .profile-choice .avatar, .account-avatar) img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+#nav-name { font-size: 1.25vw; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nav-clock { font-size: 1vw; color: var(--secondary); font-variant-numeric: tabular-nums; }
+.nav-item {
+  display: flex; align-items: center; gap: .9vw; width: 100%; padding: .85vw 1.2vw; border-radius: 1.1vw;
+  background: transparent; color: rgba(255, 255, 255, .85); font-size: 1.45vw; font-weight: 500; white-space: nowrap; text-align: left;
+  transition: transform .08s ease-out, background-color .08s ease-out;
+}
+.nav-item[data-page="settings"] { margin-top: auto; }
+.nav-item svg { display: none; }
+.nav-item[data-page="search"] svg { display: block; flex: none; width: 1.6vw; height: 1.6vw; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.nav-item[aria-current="page"] { background: rgba(255, 255, 255, .1); }
+.nav-item:focus { background: #fff !important; color: #000; transform: scale(1.04); box-shadow: 0 .6vw 1.6vw rgba(0, 0, 0, .35); transition: transform .06s ease-out; }
+
+/* Pages */
+main { min-height: 100vh; padding: 0 0 6vh; }
+.page > h1 { font-size: 3.4vw; font-weight: 700; margin: 0; padding: 8vh var(--gutter) 3vh; }
+.page > form, .page > section:not(.shelf):not(#hero), .page > .account, .page > .note { margin-left: var(--gutter); margin-right: var(--gutter); }
+.eyebrow { font-size: 1.1vw; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--secondary); margin: 0; }
+#home-status, #home-retry, footer { margin-left: var(--gutter); }
+#home-status { font-size: 1.2vw; color: var(--secondary); }
+footer { margin-top: 4vh; font-size: 1vw; color: var(--tertiary); }
+
+/* Hero: the first recommendation, edge to edge, fading into the shelves below. */
+/* As on the TV, the artwork fills nearly the whole first screen; only the next row's title and the top of its cards show. */
+/* Full-screen hero as on Apple TV: the artwork/preview fills the whole screen and the first shelf sits on top of
+   its lower edge instead of on a black band. */
+#hero { position: relative; height: 100vh; margin-bottom: -16vh; overflow: hidden; }
+#page-browse > .shelf { position: relative; z-index: 1; }
+#hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#hero-image:not([src]) { visibility: hidden; }
+#hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, .75) 0%, rgba(0, 0, 0, .4) 30%, transparent 60%), linear-gradient(to right, rgba(0, 0, 0, .75), transparent 60%); }
+.hero-info { position: absolute; z-index: 1; left: var(--gutter); right: 35vw; bottom: 26vh; }
+.hero-info h1 { font-size: 3.6vw; line-height: 1.2; font-weight: 700; margin: 1vh 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 .2vw 1vw rgba(0, 0, 0, .5); }
+#hero-meta { font-size: 1.3vw; color: rgba(255, 255, 255, .88); margin: 0 0 2.5vh; text-shadow: 0 .1vw .4vw #000; }
+.hero-actions { display: flex; gap: 1.2vw; }
+#hero-status { position: absolute; top: 100%; margin: 1.5vh 0 0; font-size: 1.2vw; color: var(--secondary); }
+
+/* Shelves: titled horizontal rows that scroll as focus moves along them. */
+.shelf { position: relative; margin-top: 3vh; }
+.shelf h2 { font-size: 1.8vw; line-height: 1.3; font-weight: 600; margin: 0 var(--gutter) .5vh; }
+.shelf-status { font-size: 1.2vw; color: var(--secondary); margin: .4vh var(--gutter) 0; }
+.shelf-status:empty { display: none; }
+.row { display: flex; align-items: flex-start; gap: 1.8vw; overflow-x: auto; overflow-y: visible; padding: 2.6vh var(--gutter) 3.4vh; scroll-padding: 0 var(--gutter); scrollbar-width: none; }
+.row::-webkit-scrollbar { display: none; }
+.row .video-card { flex: none; width: 19.5vw; }
+#recommend-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4vh 1.8vw; overflow: visible; }
+#recommend-grid .video-card { width: 100%; }
+#recommend-grid .reveal-card { opacity: 0; translate: 0 1.5vh; transition: opacity .4s ease var(--reveal-delay), translate .4s ease var(--reveal-delay), transform .2s ease; }
+#recommend-grid .reveal-card.revealed, #recommend-grid .reveal-card:focus { opacity: 1; translate: 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  #recommend-grid .reveal-card { opacity: 1; translate: none; transition: none; }
+}
+#load-more { margin-left: var(--gutter); }
+
+/* Cards: rounded artwork with title and detail underneath. Focus lifts the card, deepens the shadow and
+   adds a light sheen and a fine bright edge across the artwork. */
+.video-card { display: flex; flex-direction: column; justify-content: flex-start; padding: 0; border-radius: 0; background: transparent; text-align: left; color: #fff; transition: transform .2s ease; }
+.video-card:focus { position: relative; z-index: 2; background: transparent; color: #fff; transform: translateY(-.3vw) scale(1.06); box-shadow: none; }
+.video-card .art { position: relative; display: block; width: 100%; align-self: stretch; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: #1c1c1e; box-shadow: 0 .5vw 1.2vw rgba(0, 0, 0, .45); transition: box-shadow .2s ease; }
+.video-card .art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.video-card .art img:not([src]) { visibility: hidden; }
+.video-card .art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(125deg, rgba(255, 255, 255, .3) 0%, rgba(255, 255, 255, .08) 30%, transparent 55%); opacity: 0; transition: opacity .2s ease; }
+.video-card:focus .art { outline: .14vw solid rgba(255, 255, 255, .9); outline-offset: .15vw; box-shadow: 0 2.2vw 3.6vw rgba(0, 0, 0, .85); }
+.video-card:focus .art::after { opacity: 1; }
+.video-card strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: .8vw .1vw .3vw; min-height: 2.8em; font-size: 1.2vw; line-height: 1.4; font-weight: 500; color: rgba(255, 255, 255, .92); transition: color .2s ease; }
+.video-card:focus strong { color: #fff; }
+.video-card .detail { display: block; margin: 0 .1vw; font-size: 1vw; line-height: 1.5; color: rgba(235, 235, 245, .78); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-card .card-progress { position: absolute; z-index: 1; left: 1vw; right: 1vw; bottom: .9vw; height: .3vw; border-radius: 1vw; background: rgba(255, 255, 255, .35); overflow: hidden; }
+.card-progress i { position: absolute; inset: 0 auto 0 0; background: #fff; }
+.video-card .art:has(.card-progress)::before { content: ""; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(transparent, rgba(0, 0, 0, .55)); }
+
+/* Grid pages (search results, continue watching) */
+#search-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3vh 2vw; margin: 3vh 0; }
+/* Search: one wide field with a magnifier at the top, results as a four-column grid of the same cards. */
+.visually-hidden, #search-form label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#page-search { padding-top: 7vh; }
+#search-form { flex-wrap: nowrap; gap: 1.2vw; }
+#search-field { flex: 1; display: flex; align-items: center; border-radius: 1.2vw; background: rgba(255, 255, 255, .1) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.4' stroke-linecap='round'><circle cx='10.5' cy='10.5' r='6.5'/><path d='M15.5 15.5 21 21'/></svg>") 1.6vw center / 1.9vw no-repeat; transition: background-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+#search-field:focus-within { background-color: #fff; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a3a3c' stroke-width='2.4' stroke-linecap='round'><circle cx='10.5' cy='10.5' r='6.5'/><path d='M15.5 15.5 21 21'/></svg>"); box-shadow: 0 1vw 2.5vw rgba(0, 0, 0, .5); transform: scale(1.01); }
+#search-field input { width: 100%; font-size: 1.7vw; padding: 1.3vw 2vw 1.3vw 4.6vw; border-radius: 1.2vw; background: transparent; color: #fff; box-shadow: none; transform: none; }
+#search-field:focus-within input { color: #000; }
+#search-field input::placeholder { color: rgba(235, 235, 245, .45); }
+#search-field:focus-within input::placeholder { color: #8e8e93; }
+#search-form button { flex: none; font-size: 1.3vw; }
+#search-trending h2 { font-size: 1.6vw; font-weight: 600; margin: 5vh 0 1.5vh; }
+#trending-list { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(5, auto); gap: .8vh 2vw; }
+#trending-list button { display: flex; align-items: center; gap: 1.4vw; width: 100%; padding: 1vw 1.4vw; border-radius: 1vw; background: transparent; font-size: 1.35vw; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(255, 255, 255, .85); }
+#trending-list button:focus { background: #fff; color: #000; transform: scale(1.02); }
+#trending-list .rank { flex: none; width: 2vw; font-weight: 700; color: var(--tertiary); font-variant-numeric: tabular-nums; }
+#trending-list li:nth-child(-n+3) .rank { color: var(--secondary); }
+#trending-list button:focus .rank { color: #8e8e93; }
+#search-empty { margin: 22vh var(--gutter) 0; text-align: center; font-size: 1.4vw; color: var(--tertiary); }
+#search-results h2 { font-size: 1.6vw; font-weight: 600; margin: 5vh 0 0; }
+#search-status { font-size: 1vw; color: var(--tertiary); margin: .4vh 0 0; }
+#search-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4vh 1.8vw; margin: 2.5vh 0 3vh; }
+.note { font-size: 1.1vw; color: var(--secondary); }
+#search-more { margin-bottom: 3vh; }
+
+/* Settings: tvOS layout — large icon and title on the left, grouped rounded rows on the right. A row shows
+   its name on the left and its value or a chevron on the right; the focused row turns white. */
+.settings-layout { display: grid; grid-template-columns: 34vw 1fr; min-height: 92vh; align-items: center; padding-right: var(--gutter); }
+.settings-hero { text-align: center; color: var(--secondary); }
+.settings-icon { width: 17vw; height: 17vw; filter: drop-shadow(0 1.2vw 2.4vw rgba(0, 0, 0, .55)); }
+.settings-hero h1 { font-size: 2.6vw; font-weight: 700; color: #fff; margin: 3vh 0 .5vh; }
+.settings-hero p { font-size: 1.2vw; margin: 0; }
+.settings-list { display: flex; flex-direction: column; gap: .8vh; }
+.group-title { font-size: 1vw; font-weight: 600; color: var(--tertiary); margin: 3vh 1.4vw .6vh; }
+.group-title:first-child { margin-top: 0; }
+.account, #form { display: flex; flex-direction: column; gap: .8vh; padding: 0; margin: 0; max-width: none; background: none; }
+#account-status, .setting-row, .row-button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 4.4vw; padding: 0 1.6vw; border-radius: 1vw; background: #1c1c1e; font-size: 1.35vw; color: #fff; text-align: left; }
+#account-status { color: var(--secondary); }
+.row-button { background: #1c1c1e url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m9 5 7 7-7 7'/></svg>") right 1.4vw center / 1.6vw no-repeat; padding-right: 4vw; transform: none; }
+.row-button:focus { background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a3a3c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m9 5 7 7-7 7'/></svg>") right 1.4vw center / 1.6vw no-repeat; color: #000; transform: scale(1.02); box-shadow: 0 1vw 2.5vw rgba(0, 0, 0, .5); }
+#logout { color: #ff6961; }
+#logout:focus { color: #d70015; }
+.setting-row:focus { outline: none; }
+.setting-row { cursor: pointer; transition: transform .15s ease, background-color .15s ease; }
+.setting-row span { flex: none; }
+.setting-row select, .setting-row input { width: auto; min-width: 0; padding: .4vw 0; margin-left: 2vw; border-radius: 0; background: transparent; color: var(--secondary); font-size: 1.35vw; text-align: right; box-shadow: none; transform: none; }
+.setting-row select { -webkit-appearance: none; appearance: none; text-align-last: right; }
+.setting-row input { flex: 1; }
+.setting-row:focus-within { background: #fff; color: #000; transform: scale(1.02); box-shadow: 0 1vw 2.5vw rgba(0, 0, 0, .5); }
+.setting-row:focus-within select, .setting-row:focus-within input { color: #3a3a3c; background: transparent; box-shadow: none; transform: none; }
+.settings-list .note { margin: 1.5vh 1.4vw 0; font-size: 1vw; color: var(--tertiary); }
+.card { margin-top: 4vh; padding: 1.6vw 2vw; border-radius: 1.2vw; background: #1c1c1e; max-width: 60vw; }
+.card h2 { font-size: 1.3vw; font-weight: 600; margin: 0 0 .6vh; }
+.card p { font-size: 1.1vw; color: var(--secondary); margin: 0; }
+
+/* Login sheet */
+dialog { border: 0; border-radius: 1.6vw; padding: 3vw 4vw; background: #1c1c1e; color: #fff; text-align: center; font-size: 1.25vw; box-shadow: 0 3vw 8vw rgba(0, 0, 0, .8); }
+dialog::backdrop { background: rgba(0, 0, 0, .75); backdrop-filter: blur(20px); }
+dialog h2 { font-size: 1.8vw; margin-top: 0; }
+dialog button { margin: 1vw .5vw 0; }
+
+/* Player: modelled on the Apple TV app's playback screen. Round icon buttons float in the centre (back
+   10 s, play/pause, forward 10 s) with a back button at the top left; title and a thin scrubber with elapsed
+   and remaining time sit at the bottom. Labels stay in the DOM for screen readers and are drawn as icons. */
+#player { position: fixed; inset: 0; background: #000; }
+#player:focus { outline: none; }
+video { width: 100%; height: 100%; object-fit: contain; }
+.overlay { position: absolute; inset: 0; background: linear-gradient(rgba(0, 0, 0, .55), transparent 22%, transparent 55%, rgba(0, 0, 0, .88)); }
+#controls { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5vw; }
+/* Remote focus arrives immediately; only the button losing focus eases back. */
+#controls button { width: 5.6vw; height: 5.6vw; padding: 0; border-radius: 50%; font-size: 0; color: transparent; background-color: rgba(255, 255, 255, .16); background-position: center; background-size: 58%; background-repeat: no-repeat; transition: transform .08s ease-out; }
+#controls button:focus { background-color: #fff; transform: scale(1.12); box-shadow: 0 1vw 2.5vw rgba(0, 0, 0, .5); transition: none; }
+#back { position: absolute; top: 5vh; left: 4vw; width: 3.8vw !important; height: 3.8vw !important; }
+#back { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M29 12 17 24l12 12'/></svg>"); }
+#back:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M29 12 17 24l12 12'/></svg>"); }
+#backward { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M14 15.5A14 14 0 1 1 10 25'/><path d='M8 9.5v8h8'/><text x='24' y='29.5' font-family='Helvetica,Arial' font-size='12' font-weight='700' fill='%23fff' stroke='none' text-anchor='middle'>10</text></svg>"); }
+#backward:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M14 15.5A14 14 0 1 1 10 25'/><path d='M8 9.5v8h8'/><text x='24' y='29.5' font-family='Helvetica,Arial' font-size='12' font-weight='700' fill='%23000' stroke='none' text-anchor='middle'>10</text></svg>"); }
+#forward { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M34 15.5A14 14 0 1 0 38 25'/><path d='M40 9.5v8h-8'/><text x='24' y='29.5' font-family='Helvetica,Arial' font-size='12' font-weight='700' fill='%23fff' stroke='none' text-anchor='middle'>10</text></svg>"); }
+#forward:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M34 15.5A14 14 0 1 0 38 25'/><path d='M40 9.5v8h-8'/><text x='24' y='29.5' font-family='Helvetica,Arial' font-size='12' font-weight='700' fill='%23000' stroke='none' text-anchor='middle'>10</text></svg>"); }
+#toggle[data-state="playing"] { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 12v24M31 12v24' stroke-width='5'/></svg>"); }
+#toggle[data-state="playing"]:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 12v24M31 12v24' stroke-width='5'/></svg>"); }
+#toggle[data-state="paused"] { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 11.5v25l20-12.5z' fill='%23fff'/></svg>"); background-position: 56% center; }
+#toggle[data-state="paused"]:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 11.5v25l20-12.5z' fill='%23000'/></svg>"); }
+#controls #player-retry, #controls #replay, #controls #play-next { width: auto; height: auto; padding: 1vw 2.4vw; border-radius: 999px; font-size: 1.3vw; color: #fff; background-image: none; }
+#controls #player-retry:focus, #controls #replay:focus, #controls #play-next:focus { color: #000; }
+.info { position: absolute; left: 5vw; right: 5vw; bottom: 6vh; }
+.info .eyebrow { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 1.05vw; }
+.info h2 { font-size: 2.3vw; font-weight: 700; margin: .5vh 0 .3vh; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#player-status { font-size: 1vw; color: var(--secondary); margin: 0; }
+progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: .45vw; margin-top: 2.2vh; border: 0; border-radius: 1vw; overflow: hidden; background: rgba(255, 255, 255, .28); }
+progress::-webkit-progress-bar { background: rgba(255, 255, 255, .28); border-radius: 1vw; }
+progress::-webkit-progress-value { background: #fff; border-radius: 1vw; }
+.transport { display: flex; justify-content: space-between; margin-top: 1vh; font-size: 1.05vw; color: var(--secondary); font-variant-numeric: tabular-nums; }
+
+/* Hero motion: slow drift on the artwork, cross-fade between featured items, page dots. */
+#hero-image { transition: opacity .45s ease; }
+.hero-info { transition: opacity .45s ease; }
+#hero.fading #hero-image, #hero.fading .hero-info { opacity: 0; }
+/* Muted preview of the featured video: fades in over the artwork once it is actually playing, as on Apple TV. */
+#hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; opacity: 0; transition: opacity .8s ease; pointer-events: none; }
+#hero-video.playing { opacity: 1; }
+#hero.fading #hero-video { opacity: 0; transition-duration: .3s; }
+#hero-dots { position: absolute; z-index: 1; left: 0; right: 0; bottom: 19vh; display: flex; justify-content: center; gap: .6vw; }
+#hero-dots i { width: .55vw; height: .55vw; border-radius: 1vw; background: rgba(255, 255, 255, .4); transition: width .3s ease, background-color .3s ease; }
+#hero-dots i.current { width: 1.6vw; background: #fff; }
+/* Pages fade in when switching. Rows scroll instantly: smooth scrolling lagged behind repeated key presses
+   and let the focused card leave the screen. */
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+.page:not([hidden]) { animation: page-in .25s ease; }
+
+/* Loading placeholders: grey rounded tiles pulse in an empty shelf, and the hero shows a dark gradient,
+   until the first data arrives. They disappear on success or failure (the class is removed either way). */
+@keyframes placeholder-pulse { 50% { opacity: .45; } }
+.shelf.loading .row:empty::before {
+  content: ""; flex: none; grid-column: 1 / -1; width: 100%; height: calc(19.5vw * 9 / 16);
+  background: repeating-linear-gradient(90deg, #1c1c1e 0 19.5vw, transparent 19.5vw 21.3vw);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 19.5vw, transparent 19.5vw 21.3vw);
+  border-radius: var(--radius); animation: placeholder-pulse 1.4s ease-in-out infinite;
+}
+#hero.loading:not(:has(#hero-image[src])) { background: linear-gradient(160deg, #1c1c1e, #000 70%); animation: placeholder-pulse 1.4s ease-in-out infinite; }
+
+/* Hero play button carries a play glyph. */
+/* Detail page: full-screen artwork fading into black, facts and actions on the left, related shelf below. */
+#detail { position: fixed; inset: 0; z-index: 15; background: #000; overflow: hidden; animation: page-in .25s ease; }
+#detail-image { position: absolute; inset: 0 0 auto; width: 100%; height: 78vh; object-fit: cover; }
+#detail-image:not([src]) { visibility: hidden; }
+#detail::before { content: ""; position: absolute; inset: 0 0 auto; height: 78vh; z-index: 1; background: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .6) 38%, transparent 70%), linear-gradient(to right, rgba(0, 0, 0, .85), rgba(0, 0, 0, .3) 55%, transparent 80%); }
+.detail-info { position: absolute; z-index: 2; left: var(--gutter); top: 16vh; width: 52vw; }
+#detail-title { font-size: 3.2vw; line-height: 1.2; font-weight: 700; margin: 0 0 1.2vh; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#detail-meta { font-size: 1.2vw; color: var(--secondary); margin: 0 0 2.5vh; }
+.detail-actions { display: flex; align-items: center; gap: 1.2vw; }
+#detail-status { font-size: 1.05vw; color: var(--secondary); margin: 1.5vh 0 0; }
+#detail-status:empty { display: none; }
+#detail-desc { font-size: 1.15vw; line-height: 1.6; color: var(--secondary); margin: 2.5vh 0 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+#detail-related-shelf { position: absolute; z-index: 2; left: 0; right: 0; bottom: 2vh; margin: 0; }
+#player { z-index: 20; }
+
+/* Player loading: a spinning ring around the centre button while the video loads or buffers. */
+@keyframes spin { to { transform: rotate(360deg); } }
+#player.busy #toggle { position: relative; }
+#player.busy #toggle::after { content: ""; position: absolute; inset: -.6vw; border-radius: 50%; border: .3vw solid rgba(255, 255, 255, .2); border-top-color: #fff; animation: spin .9s linear infinite; }
+/* No on-screen key hints, as in the Apple TV app; focus styles carry the navigation. */
+footer { display: none; }
+
+/* Settings: destructive row in red, read-only info rows without focus. */
+#clear-history { color: #ff6961; }
+#clear-history:focus, #clear-history.armed:focus { color: #d70015; }
+.info-row { display: flex; align-items: center; justify-content: space-between; min-height: 4vw; padding: 0 1.6vw; border-radius: 1vw; background: #1c1c1e; font-size: 1.25vw; }
+.info-row span:last-child { color: var(--secondary); }
+.settings-list { max-height: 100vh; overflow-y: auto; padding: 6vh 0; scrollbar-width: none; }
+.settings-list::-webkit-scrollbar { display: none; }
+
+/* Exit confirmation sheet */
+
+#controls #play-next { max-width: 32vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inline-error { font-size: 1.2vw; color: var(--secondary); margin: 0 0 1.5vh; }
+
+/* 收藏夹: favourite folders as pills above the selected folder's videos. */
+#page-library > .shelf-status, #library-login { margin-left: var(--gutter); }
+/* The sidebar entry already names the shelf (and the page pill shows it), so the shelf title is for screen readers. */
+.library-content > .shelf > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#library-login { margin-top: 2vh; }
+.folder-row { gap: 1vw; padding-bottom: 0; }
+.folder-row button { flex: none; font-size: 1.2vw; padding: .7vw 1.6vw; }
+.folder-row button[aria-pressed="true"] { background: var(--fill-strong); color: #fff; }
+.folder-row button[aria-pressed="true"]:focus { background: #fff; color: #000; }
+.folder-row button span { margin-left: .6vw; color: var(--tertiary); }
+
+/* Detail page parts (P1, P2…): a pill row above the related shelf. */
+#detail-pages-shelf { position: absolute; z-index: 2; left: 0; right: 0; bottom: 41vh; margin: 0; }
+#detail-pages-shelf h2 { margin-bottom: 0; }
+#detail-pages button { max-width: 24vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#detail:has(#detail-pages-shelf:not([hidden])) .detail-info { top: 10vh; }
+#detail:has(#detail-pages-shelf:not([hidden])) #detail-desc { -webkit-line-clamp: 2; }
+
+/* Player options (speed, quality, subtitles, danmaku): glass capsules on the title row at the bottom right,
+   where the Apple TV player keeps its subtitle and audio buttons; the title column narrows to make room. */
+#controls .player-options { position: absolute; right: 5vw; bottom: calc(6vh + 5.2vw); display: flex; gap: .8vw; }
+#controls .player-options button { width: auto; height: auto; padding: .55vw 1.3vw; border-radius: 999px; font-size: 1.05vw; font-weight: 600; color: rgba(255, 255, 255, .92); background-image: none; background-color: rgba(255, 255, 255, .16); }
+#controls .player-options button:focus { color: #000; background-color: #fff; transform: scale(1.08); }
+.info h2 { max-width: 46vw; }
+.info .eyebrow, #player-status { max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Subtitles stay visible when the controls hide. */
+#subtitle-text, #danmaku-layer { font-family: system-ui; }
+#subtitle-text { position: absolute; z-index: 1; left: 10vw; right: 10vw; bottom: 9vh; margin: 0; text-align: center; font-size: 2vw; line-height: 1.4; font-weight: 600; color: #fff; text-shadow: 0 0 .4vw #000, 0 .1vw .3vw #000; pointer-events: none; }
+#player:has(.overlay:not([hidden])) #subtitle-text { bottom: 30vh; }
+
+/* 分区: category pills over a four-column grid. */
+#region-tabs { padding-top: 0; }
+#region-grid, #up-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4vh 1.8vw; margin: 2vh var(--gutter) 4vh; }
+#page-regions > .shelf-status { margin-top: 1vh; }
+/* UP 主 page: full-screen like the detail page, profile header above the uploads. */
+#up-page { position: fixed; inset: 0; z-index: 15; overflow-y: auto; background: radial-gradient(ellipse at 20% 0%, #2c2c2e 0%, #000 60%); animation: page-in .25s ease; scrollbar-width: none; }
+#up-page::-webkit-scrollbar { display: none; }
+.up-header { display: flex; align-items: center; gap: 2.4vw; padding: 9vh var(--gutter) 2vh; }
+#up-face { width: 9vw; height: 9vw; border-radius: 50%; object-fit: cover; background: #2c2c2e; box-shadow: 0 1.2vw 3vw rgba(0, 0, 0, .6); }
+#up-face:not([src]) { visibility: hidden; }
+#up-name { font-size: 3vw; font-weight: 700; margin: 0 0 .8vh; }
+#up-meta { font-size: 1.2vw; color: var(--secondary); margin: 0 0 .6vh; }
+#up-sign { font-size: 1.1vw; color: var(--tertiary); margin: 0; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#up-page > .shelf-status { margin: 0 var(--gutter); }
+
+/* Danmaku: scrolling comments in lanes over the top two thirds; top/bottom comments fade in place.
+   Only transform and opacity animate, which TVs composite cheaply. */
+#danmaku-layer { --dm-top: 1.5vh; position: absolute; inset: var(--dm-top) 0 auto; height: calc(66vh - var(--dm-top)); overflow: hidden; pointer-events: none; }
+#danmaku-layer .dm { position: absolute; left: 100%; white-space: nowrap; font-size: 1.9vw; font-weight: 600; line-height: 1.2; color: #fff; opacity: .9; text-shadow: 0 0 .25vw #000, .1vw .1vw .2vw #000; will-change: transform; animation: dm-scroll 9s linear forwards; }
+#danmaku-layer .dm.fixed { left: 50%; transform: translateX(-50%); animation: dm-fixed 4s linear forwards; }
+#danmaku-layer.paused .dm { animation-play-state: paused; }
+@keyframes dm-scroll { from { transform: translateX(0); } to { transform: translateX(calc(-100vw - 100%)); } }
+@keyframes dm-fixed { 0%, 90% { opacity: .9; } 100% { opacity: 0; } }
+
+/* Saved accounts: one row each, the active one marked; selecting another switches to it. */
+#account-list { display: flex; flex-direction: column; gap: .8vh; }
+#account-list:empty { display: none; }
+#account-list .row-button { justify-content: flex-start; gap: 1vw; }
+.account-avatar { flex: none; display: grid; place-items: center; width: 2.6vw; height: 2.6vw; border-radius: 50%; background: linear-gradient(135deg, #8e8e93, #48484a); color: #fff; font-size: 1.1vw; font-weight: 600; }
+#account-list .row-button .marker { margin-left: auto; margin-right: 1vw; font-size: 1.1vw; color: #30d158; }
+#account-list .row-button:focus .marker { color: #248a3d; }
+
+/* Account library (关注更新 / 稍后再看 / 观看历史 / 收藏夹 in the sidebar): the chosen shelf as a four-column grid. */
+.library-layout { margin: 1vh var(--gutter) 4vh; }
+.library-content > .shelf { display: none; margin: 0; }
+.library-content > .shelf.current:not([hidden]) { display: block; }
+.library-content .row:not(.folder-row) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4vh 1.8vw; padding: 1vh 0 2vh; overflow: visible; }
+.library-content .row:not(.folder-row) > .video-card { width: auto; }
+.library-content .folder-row { padding-left: 0; padding-right: 0; margin-bottom: 1vh; }
+
+/* Search: popular-video posters under the hot searches. */
+#search-popular-title { margin-top: 4vh !important; }
+#search-popular { padding: 2.6vh 0 4vh; margin: 0 calc(-1 * var(--gutter)); padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* 稍后再看: a round icon button beside Play, like Apple TV's Add to Up Next. */
+#detail-later { width: 3.9vw; height: 3.9vw; padding: 0; border-radius: 50%; font-size: 0; background: var(--fill-strong) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round'><path d='M24 13v22M13 24h22'/></svg>") center / 55% no-repeat; }
+#detail-later:focus { background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round'><path d='M24 13v22M13 24h22'/></svg>") center / 55% no-repeat; transform: scale(1.08); }
+#detail-later[data-saved="true"] { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='m14 25 7 7 13-15'/></svg>"); }
+#detail-later[data-saved="true"]:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='m14 25 7 7 13-15'/></svg>"); }
+
+/* Full-screen profile picker: a uniform dark backdrop behind the avatars. */
+#profile-picker { width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: none; display: none; }
+#profile-picker[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#profile-picker::backdrop { background: #101010; backdrop-filter: none; }
+#profile-picker h2 { max-width: 80vw; text-align: center; font-size: 2.6vw; font-weight: 700; margin: 0 0 7vh; }
+#profile-choices { display: flex; gap: 3.5vw; justify-content: center; }
+.profile-choice { display: flex; flex-direction: column; align-items: center; gap: 2vh; width: 12vw; padding: 0; margin: 0; background: transparent; color: var(--secondary); transform: none; box-shadow: none; }
+.profile-choice .avatar { position: relative; display: grid; place-items: center; width: 9.5vw; height: 9.5vw; border-radius: 50%; font-size: 4vw; font-weight: 600; color: #fff; background: linear-gradient(135deg, #8e8e93, #48484a); box-shadow: inset 0 .15vw 0 rgba(255, 255, 255, .25); transition: transform .2s ease, box-shadow .2s ease; }
+.profile-choice[data-tint="1"] .avatar { background: linear-gradient(135deg, #64d2ff, #0a84ff); }
+.profile-choice[data-tint="2"] .avatar { background: linear-gradient(135deg, #ffd60a, #ff9f0a); }
+.profile-choice[data-tint="3"] .avatar { background: linear-gradient(135deg, #ff6482, #bf5af2); }
+.profile-choice.add .avatar { background: rgba(255, 255, 255, .14); font-weight: 300; }
+.profile-choice[data-current] .avatar::after { content: ""; position: absolute; right: .1vw; top: .1vw; width: 22%; height: 22%; border-radius: 50%; background: #30d158 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m6 12.5 4 4 8-9'/></svg>") center / 65% no-repeat; }
+.profile-choice .name { font-size: 1.4vw; font-weight: 600; max-width: 12vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-choice:focus { background: transparent; color: #fff; transform: none; box-shadow: none; }
+.profile-choice:focus .avatar { transform: scale(1.15); box-shadow: 0 0 0 .35vw #fff, 0 1.5vw 3vw rgba(0, 0, 0, .6); }
+/* From the sidebar: Apple TV's 切换个人资料 panel — a "‹ 切换账号" capsule at the top left and below it a rounded
+   dark card with the avatars; the focused one grows, the others shrink a little. The page stays visible. */
+.picker-pill { display: none; }
+#profile-picker.panel[open] { display: block; inset: 4.6vh auto auto 1.6vw; width: auto; height: auto; overflow: visible; text-align: left; }
+body:has(#profile-picker.panel[open]) #nav-pill { opacity: 0; }
+#profile-picker.panel::backdrop { background: rgba(0, 0, 0, .25); backdrop-filter: none; }
+#profile-picker.panel h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0; }
+#profile-picker.panel .picker-pill { display: inline-flex; align-items: center; gap: .5vw; margin: 0 0 1.2vh; padding: .35vw 1.2vw .35vw .4vw; border-radius: 999px; background: rgba(58, 58, 60, .9); font-size: 1.2vw; font-weight: 600; }
+.picker-pill .chevron { width: .7vw; height: 1.2vw; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+.picker-pill .pill-person { width: 2vw; height: 2vw; padding: .2vw; box-sizing: border-box; border-radius: 50%; background: rgba(0, 0, 0, .35); fill: none; stroke: #fff; stroke-width: 1.8; }
+#profile-picker.panel #profile-choices { justify-content: flex-start; gap: .4vw; padding: 1.4vw 1.2vw 1.2vw; border-radius: 2vw; background: rgba(44, 44, 46, .94); box-shadow: 0 2vw 5vw rgba(0, 0, 0, .5); }
+#profile-picker.panel .profile-choice { gap: 1vh; width: 9.6vw; }
+#profile-picker.panel .profile-choice .avatar { width: 8.6vw; height: 8.6vw; font-size: 3.4vw; transform: scale(.92); box-shadow: inset 0 .15vw 0 rgba(255, 255, 255, .25); }
+#profile-picker.panel .profile-choice:focus .avatar { transform: scale(1.04); box-shadow: inset 0 .15vw 0 rgba(255, 255, 255, .25), 0 1vw 2.4vw rgba(0, 0, 0, .55); }
+#profile-picker.panel .profile-choice .name { font-size: 1.05vw; max-width: 9.6vw; }
+
+/* Round glass action buttons beside Play (hero + / i), Apple TV's Liquid Glass circles: translucent fill,
+   blur, and a thin specular rim lit from the top. */
+.round-action { width: 3.9vw; height: 3.9vw; padding: 0; border-radius: 50%; font-size: 0; background: rgba(255, 255, 255, .16) center / 58% no-repeat; }
+/* One round-button family (hero, detail, player): glass circle, 58% glyph, 3.2/48 strokes; Play uses the player's rounded triangle. */
+#hero-play, #detail-play { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 11.5v25l20-12.5z' fill='%23fff'/></svg>"); background-position: 56% center; }
+#hero-play:focus, #detail-play:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M17 11.5v25l20-12.5z' fill='%23000'/></svg>"); }
+.round-action:focus { background-color: #fff; transform: scale(1.08); box-shadow: 0 .8vw 2vw rgba(0, 0, 0, .5); }
+#detail-episodes svg { display: block; width: 58%; height: 58%; margin: auto; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; }
+#hero-later { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round'><path d='M24 13v22M13 24h22'/></svg>"); }
+#hero-later:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round'><path d='M24 13v22M13 24h22'/></svg>"); }
+#hero-later[data-saved="true"] { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='m14 25 7 7 13-15'/></svg>"); }
+#hero-later[data-saved="true"]:focus { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='m14 25 7 7 13-15'/></svg>"); }
+.hero-actions { align-items: center; }
+#hero-meta[data-note]::after { content: " · " attr(data-note); color: #fff; }
+
+/* Native blur keeps the translucent sidebar without the SVG refraction's long animation frames on LG TV. */
+#sidebar { background: rgba(28, 28, 32, .45); backdrop-filter: blur(12px) saturate(1.35); }
+/* Stop filtering once the panel has slid out. */
+#sidebar:not(:focus-within) { backdrop-filter: none; transition: transform .25s ease, opacity .25s ease, box-shadow .25s ease, backdrop-filter 0s linear .25s; transition-behavior: allow-discrete; }
+#sidebar, #sidebar:focus-within { box-shadow: 0 1.6vw 4vw rgba(0, 0, 0, .35); }
+/* A uniform scrim keeps the background dim without introducing a horizontal gradient. */
+#home::before {
+  content: ""; position: fixed; inset: 0; z-index: 9;
+  background: rgba(0, 0, 0, .45); opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+#home:has(#sidebar:focus-within)::before { opacity: 1; }
+/* Labels on clear glass need their own contrast: a soft shadow under the text instead of a darker panel. */
+#sidebar .nav-item:not(:focus), #sidebar .profile:not(:focus) { text-shadow: 0 0 .5vw rgba(0, 0, 0, .7), 0 .05vw .15vw rgba(0, 0, 0, .6); }
+progress, progress::-webkit-progress-bar { background: rgba(255, 255, 255, .3); }
+progress { height: .5vw; }
+
+#glass-filters { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.liquid { position: relative; }
+:is(#home, #detail, #player) .liquid:not(:focus) { background-color: rgba(255, 255, 255, .02); backdrop-filter: var(--glass-filter); box-shadow: 0 .5vw 1.4vw rgba(0, 0, 0, .3); }
+/* Text and icons on a glass button keep a soft shadow so they read over bright video. */
+:is(#home, #detail, #player) .liquid:not(:focus) { text-shadow: 0 0 .4vw rgba(0, 0, 0, .6); }
+/* Static glass (liquidGlass refract: false) for buttons and pills that sit over moving pictures: the same rim
+   highlight and tint, without the refraction the TV would have to redraw every frame. */
+.liquid.lite:not(:focus, .row)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--glass-light) 0 0 / 100% 100% no-repeat; pointer-events: none; }
+/* Scrolling tab bars carry it as a background instead, which stays put while the tabs scroll. */
+.row.liquid.lite { background-image: var(--glass-light); background-size: 100% 100%; background-repeat: no-repeat; }
+:is(#home, #detail, #player) .liquid.lite:not(:focus) { background-color: rgba(255, 255, 255, .07); }
+/* Pill rows on the plain black pages (分区, 收藏夹, 分集) carry the glass rim and tint without refraction:
+   on black there is nothing to bend, and a page can hold over a hundred of them. */
+#detail-pages button { position: relative; }
+#detail-pages button:not(:focus)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .08) 30%, rgba(255, 255, 255, .03) 60%, rgba(255, 255, 255, .3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+#detail-pages button:not(:focus):not([aria-pressed="true"]) { background-color: rgba(255, 255, 255, .09); box-shadow: inset 0 0 .8vw rgba(255, 255, 255, .06); }
+
+/* tvOS alert (退出): title and message over a glass panel, full-width buttons stacked vertically; the
+   destructive action is red until focused. */
+dialog.alert { width: 36vw; padding: 3.2vw 3vw 2.4vw; border-radius: 2vw; }
+dialog.alert:not(.liquid) { background: rgba(30, 30, 34, .82); }
+dialog.alert.liquid { background-color: rgba(18, 18, 22, .38); backdrop-filter: var(--glass-filter); }
+dialog.alert h2 { font-size: 1.9vw; font-weight: 700; margin: 0 0 1vh; }
+dialog.alert p { margin: 0 0 3.5vh; font-size: 1.2vw; line-height: 1.5; color: var(--secondary); }
+.alert-actions { display: flex; flex-direction: column; gap: 1.2vh; }
+.alert-actions button { width: 100%; margin: 0; padding: 1.1vw 2vw; border-radius: 1.1vw; font-size: 1.35vw; font-weight: 600; background: rgba(255, 255, 255, .14); color: #fff; }
+.alert-actions button:focus { background: #fff; color: #000; transform: scale(1.05); }
+.alert-actions button.destructive { color: #ff453a; }
+.alert-actions button.destructive:focus { color: #d70015; }
+dialog.alert::backdrop { background: rgba(0, 0, 0, .45); backdrop-filter: blur(24px) saturate(1.4); }
+
+/* Login, as Apple TV's 登录或注册 screen on the user's TV: a flat dark grey page, the title and a short note
+   centred in the left half, and on the right a lighter rounded card holding the QR code, 扫描二维码以继续, the
+   instructions, an 或 divider and the buttons. */
+#login-dialog { width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; padding: 0; border-radius: 0; background: #2c2c2e; box-shadow: none; display: none; }
+#login-dialog::backdrop { background: #2c2c2e; }
+#login-dialog[open] { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+.login-text { justify-self: center; width: 34vw; text-align: center; }
+#login-dialog h2 { font-size: 3.4vw; font-weight: 700; margin: 0 0 3.5vh; }
+.login-lead { margin: 0 0 3vh; font-size: 1.4vw; line-height: 1.5; color: rgba(235, 235, 245, .62); }
+.login-note { margin: 0; font-size: 1.05vw; line-height: 1.6; color: var(--secondary); }
+.login-card { justify-self: center; display: flex; flex-direction: column; align-items: center; width: 26vw; padding: 3.4vw 2.6vw 3vw; box-sizing: border-box; border-radius: 2.4vw; background: #3a3a3c; text-align: center; }
+.login-qr { display: grid; place-items: center; width: 14vw; height: 14vw; border-radius: 1.2vw; background: #fff; }
+.login-qr canvas { width: 88%; height: auto; image-rendering: pixelated; }
+.login-qr[data-state="loading"]::after { content: ""; width: 2.4vw; height: 2.4vw; border-radius: 50%; border: .3vw solid #d1d1d6; border-top-color: #8e8e93; animation: spin 1s linear infinite; }
+.login-scan { margin: 3vh 0 .8vh; font-size: 1.3vw; font-weight: 700; }
+.login-how { margin: 0; font-size: 1vw; line-height: 1.5; color: var(--secondary); }
+#qr-status { margin: 1.2vh 0 0; font-size: 1vw; font-weight: 600; color: #fff; }
+.login-or { display: flex; align-items: center; gap: .8vw; width: 100%; margin: 2.2vh 0; font-size: .95vw; color: var(--tertiary); }
+.login-or::before, .login-or::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, .18); }
+.login-actions { display: flex; flex-direction: column; align-items: center; }
+.login-actions { width: 100%; gap: 1vh; }
+#qr-refresh { margin: 0; padding: .95vw 2vw; border-radius: 999px; font-size: 1.2vw; font-weight: 600; background: rgba(255, 255, 255, .85); color: #000; box-shadow: 0 .6vw 1.6vw rgba(0, 0, 0, .35); }
+#qr-refresh { width: 100%; }
+#qr-refresh:focus { background: #fff; transform: scale(1.06); box-shadow: 0 1vw 2.4vw rgba(0, 0, 0, .5); }
+.text-button { margin: 0; padding: .6vw 1.6vw; border-radius: 999px; font-size: 1.1vw; font-weight: 600; background: transparent; color: #fff; box-shadow: none; }
+.text-button:focus { background: #fff; color: #000; transform: scale(1.06); }
+
+/* Settings as in the Apple TV app on the user's webOS TV: a large icon on the left half (a person for the
+   account group, the gear otherwise), and on the right compact capsule rows with a light fill; the focused row
+   turns light grey-white; group titles are small grey labels. */
+.settings-layout { grid-template-columns: 55.2vw minmax(0, 1fr); padding-right: 3.2vw; }
+.settings-icon { width: 28vw; height: 28vw; }
+.settings-icon.settings-person { filter: none; }
+/* As in the Apple TV app on the user's TV: the person outline while an account row has focus (no profile
+   picture there, even when the account has one), the gear for every other group. */
+.settings-icon.settings-person { display: none; }
+.settings-layout[data-group="账号"] .settings-icon.settings-person { display: inline; }
+.settings-layout[data-group="账号"] .settings-gear { display: none; }
+#page-settings .settings-list { gap: 1.3vh; padding: 6vh 1vw; }
+#page-settings :where(#account-status, .setting-row, .row-button, .info-row) { min-height: 5.9vh; border-radius: 999px; font-size: 1.3vw; padding-left: 1.5vw; background-color: rgba(255, 255, 255, .1); }
+#page-settings :is(.row-button, .setting-row):focus, #page-settings .setting-row:focus-within { background-color: #e8e8ed; color: #000; transform: scale(1.01); }
+/* Rows that open a choice (the quality picker) carry the same chevron as the other rows. */
+#page-settings .setting-row:has(> select) { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m9 5 7 7-7 7'/></svg>"); background-position: right 1.4vw center; background-size: 1.6vw; background-repeat: no-repeat; padding-right: 4vw; }
+#page-settings .setting-row:has(> select):focus-within { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233a3a3c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m9 5 7 7-7 7'/></svg>"); }
+#page-settings .group-title { font-size: 1.1vw; font-weight: 500; color: var(--secondary); margin: 1.6vh 0 .2vh 1.5vw; }
+#account-status { color: var(--secondary); }
+
+/* Focused cards: besides the lift and the fixed sheen, a band of light sweeps once across the artwork, like
+   the glare passing over an Apple TV poster when it gains focus. */
+@keyframes card-sheen { from { background-position: 105% 0, 0 0; } to { background-position: -10% 0, 0 0; } }
+.video-card:focus .art::after {
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .26) 47%, rgba(255, 255, 255, .06) 53%, transparent 62%) no-repeat,
+    linear-gradient(125deg, rgba(255, 255, 255, .3) 0%, rgba(255, 255, 255, .08) 30%, transparent 55%);
+  background-size: 250% 100%, 100% 100%; background-position: -10% 0, 0 0; animation: card-sheen .9s ease-out 1;
+}
+
+/* Ambient background (inner pages): two layers cross-fade; the cover is blurred, saturated and darkened, with
+   a fade to black towards the bottom and left so text stays readable. */
+#pages { position: relative; z-index: 1; }
+#ambient { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+#ambient canvas { position: absolute; inset: -12%; width: 124%; height: 124%; opacity: 0; transform: scale(1.05); transition: opacity .9s ease; }
+#ambient canvas.current { opacity: 1; }
+#ambient:has(canvas.current)::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0, 0, 0, .1), rgba(0, 0, 0, .55) 75%, rgba(0, 0, 0, .8)), linear-gradient(to right, rgba(0, 0, 0, .35), transparent 50%); }
+
+/* Tab bars (分区 categories, 收藏夹 folders) as a single Liquid Glass capsule holding text tabs, like the
+   tvOS 26 tab bar: the chosen tab sits on a soft glass highlight, the focused one turns white. */
+#region-tabs, #folder-row { display: flex; width: fit-content; max-width: calc(100vw - 2 * var(--gutter)); margin: 1vh var(--gutter) 2.5vh; padding: .5vw; gap: .3vw; border-radius: 999px; background-color: rgba(255, 255, 255, .06); scroll-padding: 0 .5vw; }
+.library-content #folder-row { max-width: 100%; margin: 0 0 2vh; }
+:is(#region-tabs, #folder-row) button { flex: none; padding: .7vw 1.6vw; border-radius: 999px; background: transparent; box-shadow: none; font-size: 1.2vw; font-weight: 600; color: rgba(255, 255, 255, .78); text-shadow: 0 0 .4vw rgba(0, 0, 0, .5); }
+:is(#region-tabs, #folder-row) button[aria-pressed="true"] { background: rgba(255, 255, 255, .2); color: #fff; }
+:is(#region-tabs, #folder-row) button:focus { background: #fff; color: #000; text-shadow: none; transform: scale(1.04); box-shadow: 0 .4vw 1vw rgba(0, 0, 0, .35); }
+
+/* Categories stay light above the artwork; underline marks selection independently of remote focus. */
+#region-tabs { width: auto; max-width: none; margin: 1vh var(--gutter) 2.5vh; padding: .6vw 1.4vw 1vw .2vw; gap: .55vw; border-radius: 0; background: transparent; border-bottom: 1px solid rgba(255, 255, 255, .1); scroll-padding: 0 1.4vw; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.4vw), transparent); }
+#region-tabs button { position: relative; padding: .7vw 1.25vw; font-size: 1.25vw; color: rgba(255, 255, 255, .6); text-shadow: none; }
+#region-tabs button[aria-pressed="true"] { background: transparent; color: #fff; }
+#region-tabs button[aria-pressed="true"]::after { content: ""; position: absolute; left: 35%; right: 35%; bottom: -.65vw; height: .16vw; border-radius: 999px; background: #fff; }
+#region-tabs button:focus { background: #fff; color: #171719; transform: none; box-shadow: 0 .25vw .8vw rgba(0, 0, 0, .2); }
+
+/* The glass search field still turns white while it has focus or is being typed in. */
+#home #search-field.liquid:focus-within { background-color: #fff; backdrop-filter: none; }
+#home #search-form button.liquid:focus { backdrop-filter: none; }
+
+/* Scrubber: playhead knob, and the seek preview — a white-framed frame thumbnail with the time beneath,
+   floating above the playhead. */
+.scrubber { position: relative; margin-top: 2.2vh; padding: .8vw 0; cursor: pointer; touch-action: none; user-select: none; }
+.scrubber progress { margin-top: 0; }
+#playhead { position: absolute; top: 50%; left: 0; width: 1.1vw; height: 1.1vw; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 .2vw .6vw rgba(0, 0, 0, .5); pointer-events: none; }
+#scrub-preview { position: absolute; bottom: 1.6vw; left: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: .8vh; pointer-events: none; }
+#scrub-thumb { position: relative; width: 18vw; aspect-ratio: 16 / 9; overflow: hidden; border-radius: .9vw; background: #1c1c1e; box-shadow: 0 0 0 .2vw rgba(255, 255, 255, .9), 0 1.2vw 3vw rgba(0, 0, 0, .6); }
+#scrub-thumb[hidden] { display: none; }
+#scrub-thumb img { position: absolute; max-width: none; }
+#scrub-time { font-size: 1.3vw; font-weight: 700; font-variant-numeric: tabular-nums; text-shadow: 0 0 .5vw rgba(0, 0, 0, .8); }
+
+/* Sidebar measured on the Apple TV app running on the user's LG webOS TV (screen capture, 960×540): panel
+   18.5% of the screen wide, 1.9% from the left and 3.3% from the top, as tall as its entries (no stretch);
+   rows 7% of the screen apart; every entry has its icon in a small dark disc; profile name and clock on one
+   line; 设置 is simply the last entry. The current page keeps a soft highlight, the focused entry is white. */
+#sidebar { top: 3.3vh; bottom: auto; left: 1.9vw; width: 18.5vw; padding: 1.8vh .7vw 1.6vh; gap: .3vh; border-radius: 1.9vw; }
+#sidebar .profile { grid-template-columns: 2.3vw minmax(0, 1fr) auto; grid-template-rows: 1.4vw 1.1vw; margin: 0 0 1.6vh; padding: .5vw .6vw; }
+#sidebar .profile:focus { transform: none; }
+#nav-avatar { grid-area: 1 / 1 / 3 / 2; width: 2.3vw; height: 2.3vw; font-size: 1vw; }
+#nav-name { grid-area: 1 / 2 / 3 / 3; font-size: 1.2vw; line-height: 1.4vw; }
+#nav-clock { grid-area: 1 / 3 / 3 / 4; font-size: 1vw; }
+#nav-hint { grid-area: 2 / 2 / 3 / 3; visibility: hidden; font-size: .9vw; line-height: 1.1vw; color: #3a3a3c; }
+#sidebar .profile:focus #nav-name { grid-row-end: 2; }
+#sidebar .profile:focus #nav-clock { visibility: hidden; }
+#sidebar .profile:focus #nav-hint { visibility: visible; }
+.nav-item { min-height: 6.7vh; padding: 0 .7vw; gap: .8vw; font-size: 1.3vw; border-radius: 999px; }
+.nav-item[data-page="settings"] { margin-top: 0; }
+.nav-item svg, .nav-item[data-page] svg { display: block; flex: none; box-sizing: border-box; width: 2.3vw; height: 2.3vw; padding: .5vw; border-radius: 50%; background: rgba(0, 0, 0, .38); color: #fff; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item[aria-current="page"] { background: rgba(255, 255, 255, .2); }
+.nav-item:focus svg { background: rgba(0, 0, 0, .78); }
+/* Collapsed sidebar: a small glass pill at the top left names the current page (‹ icon name), as Apple TV does. */
+#nav-pill { position: fixed; z-index: 8; top: 5.9vh; left: 2.3vw; display: flex; align-items: center; gap: .5vw; height: 4.8vh; padding: 0 1vw 0 .5vw; border-radius: 999px; font-size: 1.25vw; font-weight: 600; color: #fff; text-shadow: 0 0 .4vw rgba(0, 0, 0, .5); pointer-events: none; transition: opacity .2s ease; }
+#nav-pill .pill-icon { display: flex; align-items: center; flex: none; }
+#nav-pill .pill-name { line-height: 1; }
+#nav-pill .pill-icon svg { box-sizing: border-box; width: 2vw; height: 2vw; padding: .42vw; border-radius: 50%; background: rgba(0, 0, 0, .38); fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#home:has(#sidebar:focus-within) #nav-pill { opacity: 0; }
+#nav-pill.liquid { background-color: rgba(255, 255, 255, .06); backdrop-filter: var(--glass-filter); }
+/* Page titles and the search field start below the pill. */
+.page > h1 { padding-top: 13vh; }
+#page-search { padding-top: 13vh; }
+
+/* Search, laid out like Apple TV's on the user's TV: the query as a large line of text at the top (no box),
+   an on-screen keyboard on the left (mode switch, six-column keys, space / delete / clear), and on the right
+   suggestion pills above results shown as list cards (artwork left, title and facts right). */
+#page-search { padding-left: var(--gutter); padding-right: var(--gutter); }
+#page-search > #search-form { margin: 0 0 1vh; padding-bottom: 1.6vh; border-bottom: 1px solid rgba(255, 255, 255, .14); }
+#home #search-field, #home #search-field.liquid:not(:focus-within) { background: transparent; box-shadow: none; backdrop-filter: none; border-radius: 1vw; }
+#search-field input { font-size: 3.4vw; font-weight: 700; padding: .4vw 1vw; color: #fff; }
+#search-field input::placeholder { color: rgba(235, 235, 245, .3); }
+#home #search-field:focus-within { background: #fff; }
+.search-layout { display: grid; grid-template-columns: 24vw minmax(0, 1fr); gap: 3vw; align-items: start; margin-top: 2.5vh; }
+#search-keys { display: flex; flex-direction: column; gap: 1.6vh; }
+.key-modes { display: flex; padding: .3vw; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.key-modes button { flex: 1; padding: .5vw 0; border-radius: 999px; background: transparent; font-size: 1.1vw; font-weight: 600; color: rgba(255, 255, 255, .7); box-shadow: none; }
+.key-modes button[aria-pressed="true"] { background: rgba(255, 255, 255, .2); color: #fff; }
+.key-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: .4vh .2vw; }
+.key-grid .key { aspect-ratio: 1; padding: 0; border-radius: .8vw; background: transparent; font-size: 1.9vw; font-weight: 500; color: rgba(255, 255, 255, .78); box-shadow: none; }
+.key-actions { display: flex; justify-content: space-between; }
+.key-actions button { flex: 1; padding: .7vw 0; border-radius: .8vw; background: transparent; font-size: 1.15vw; color: rgba(255, 255, 255, .7); box-shadow: none; }
+#search-keys button:focus { background: #fff; color: #000; transform: scale(1.1); box-shadow: 0 .6vw 1.4vw rgba(0, 0, 0, .4); }
+.search-main { min-width: 0; }
+#search-suggest { display: flex; gap: .8vw; overflow-x: auto; padding: .6vh .2vw 1.8vh; scrollbar-width: none; }
+#search-suggest[hidden] { display: none; }
+.suggestion { flex: none; display: flex; align-items: center; gap: .5vw; padding: .65vw 1.3vw .65vw 1vw; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 1.25vw; color: #fff; box-shadow: inset 0 .06vw 0 rgba(255, 255, 255, .25); }
+.suggestion::before { content: ""; width: 1.1vw; height: 1.1vw; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round'><circle cx='10.5' cy='10.5' r='6.5'/><path d='M15.5 15.5 21 21'/></svg>") center / contain no-repeat; opacity: .8; }
+.suggestion:focus { background: #fff; color: #000; transform: scale(1.05); }
+.suggestion:focus::before { filter: invert(1); }
+#search-empty { margin: 14vh 0 0; }
+#search-results h2, #search-trending h2 { margin-top: 1vh; }
+/* Results as list cards in two columns. */
+#search-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6vh 1.4vw; }
+#search-grid .video-card { display: grid; grid-template-columns: 10vw minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 1.1vw; align-content: center; padding: .8vw; border-radius: 1.2vw; background: rgba(255, 255, 255, .1); }
+#search-grid .video-card .art { grid-row: 1 / 3; width: 10vw; border-radius: .6vw; }
+#search-grid .video-card strong { align-self: end; margin: 0; font-size: 1.15vw; -webkit-line-clamp: 2; }
+#search-grid .video-card .detail { align-self: start; margin: .3vh 0 0; }
+#search-grid .video-card:focus { background: #fff; color: #000; transform: scale(1.04); box-shadow: 0 1vw 2.4vw rgba(0, 0, 0, .45); }
+#search-grid .video-card:focus .detail { color: #3a3a3c; }
+#search-grid .video-card:focus .art { box-shadow: none; }
+/* Hot searches in the narrower right column. */
+#trending-list button { padding: .8vw 1.1vw; font-size: 1.2vw; }
+#search-popular { margin: 0; padding-left: 0; padding-right: 0; }
+#search-grid .video-card:focus strong { color: #000; }
+/* As on the TV, the settings page shows only the big icon on the left (the heading stays for screen readers). */
+.settings-hero h1, .settings-hero p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Inner pages sit on Apple TV's dark grey rather than black; the ambient glow, when present, covers it. */
+#home:not([data-page="browse"]) #ambient { background: #2c2c2e; }
+
+/* Search, as on the TV: once focus moves into the results the keyboard slides away and the results widen to
+   three columns; the focused result card turns a lighter grey (not white). */
+.search-layout { transition: grid-template-columns .3s ease, gap .3s ease; }
+#search-keys { transition: opacity .25s ease; overflow: hidden; }
+.search-layout:has(.search-main :focus) { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
+.search-layout:has(.search-main :focus) #search-keys { opacity: 0; }
+.search-layout:has(.search-main :focus) #search-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#search-grid .video-card:focus { background: rgba(255, 255, 255, .3); color: #fff; }
+#search-grid .video-card:focus strong { color: #fff; }
+#search-grid .video-card:focus .detail { color: rgba(255, 255, 255, .75); }
+
+/* Detail page as on the user's TV: a scrolling page. First screen: full-bleed artwork, the info block at the
+   lower left (title, category · UP 主, description, facts with outlined badges, buttons) and credits at the
+   lower right, with the next row peeking at the bottom. Scrolling on, the art gives way to a blurred backdrop
+   and a small centred title; below come 分集, 相关推荐, UP 主与合作, 关于 cards and the information columns. */
+#detail { overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
+#detail::-webkit-scrollbar { display: none; }
+#detail::before { display: none; }
+.detail-backdrop { position: sticky; top: 0; height: 100vh; margin-bottom: -100vh; overflow: hidden; z-index: 0; }
+.detail-backdrop img { position: absolute; transition: opacity .5s ease; }
+.detail-backdrop img:not([src]) { visibility: hidden; }
+#detail-image { inset: 0; width: 100%; height: 100%; object-fit: cover; }
+#detail-blur { inset: -10%; width: 120%; height: 120%; object-fit: cover; filter: blur(70px) saturate(1.5) brightness(.45); opacity: 0; }
+.detail-backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0, 0, 0, .8), rgba(0, 0, 0, .55) 40%, rgba(0, 0, 0, .2) 60%, transparent 78%), linear-gradient(to top, rgba(0, 0, 0, .85), transparent 45%); transition: opacity .5s ease; }
+/* Static dithering breaks up dark gradient bands without lifting pure black. */
+#hero { isolation: isolate; }
+#hero::before, .detail-backdrop::before, #ambient:has(canvas.current)::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: url("gradient-noise.png") repeat; mix-blend-mode: soft-light; opacity: .06; }
+#detail.scrolled #detail-image { opacity: 0; }
+#detail.scrolled #detail-blur { opacity: 1; }
+#detail-mini-title { position: fixed; z-index: 3; top: 4vh; left: 25vw; right: 25vw; margin: 0; text-align: center; font-size: 1.5vw; font-weight: 700; opacity: 0; transition: opacity .3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+#detail.scrolled #detail-mini-title { opacity: 1; }
+.detail-hero { position: relative; z-index: 1; min-height: 88vh; display: flex; align-items: flex-end; justify-content: space-between; gap: 4vw; padding: 0 var(--gutter) 2vh; box-sizing: border-box; }
+#detail .detail-info { position: static; width: 46vw; }
+#detail-title { margin-bottom: 1vh; }
+#detail-meta { margin: 0 0 1.4vh; font-size: 1.2vw; color: rgba(255, 255, 255, .85); }
+#detail-desc { margin: 0 0 1.4vh; color: rgba(235, 235, 245, .82); }
+#detail-facts { display: flex; flex-wrap: wrap; align-items: center; gap: .5vw; margin: 0 0 2.4vh; font-size: 1.05vw; color: rgba(235, 235, 245, .82); }
+#detail-facts:empty { display: none; }
+#detail-facts .badge { padding: 0 .4vw; border: 1px solid rgba(255, 255, 255, .55); border-radius: .3vw; font-size: .8vw; font-weight: 700; line-height: 1.5; color: rgba(255, 255, 255, .85); }
+#detail-credits { width: 24vw; margin: 0 0 1vh; display: grid; grid-template-columns: auto 1fr; gap: .4vh .8vw; font-size: 1.05vw; }
+#detail-credits dt { color: var(--secondary); }
+#detail-credits dd { margin: 0; color: rgba(255, 255, 255, .85); }
+#detail #detail-pages-shelf, #detail #detail-related-shelf { position: relative; z-index: 1; bottom: auto; margin: 2vh 0 0; }
+#detail .shelf { position: relative; z-index: 1; }
+#detail-people-shelf, #detail-about { margin-top: 2vh; }
+.person { flex: none; display: flex; flex-direction: column; align-items: center; gap: .6vh; width: 11vw; padding: 0; background: transparent; box-shadow: none; color: #fff; }
+.person .face { display: grid; place-items: center; width: 9vw; height: 9vw; border-radius: 50%; overflow: hidden; background: #636366; font-size: 3.4vw; font-weight: 600; transition: transform .2s ease, box-shadow .2s ease; }
+.person .face img { width: 100%; height: 100%; object-fit: cover; }
+.person strong { font-size: 1.15vw; font-weight: 600; max-width: 11vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person .role { font-size: .95vw; color: var(--secondary); }
+.person:focus { background: transparent; transform: none; box-shadow: none; }
+.person:focus .face { transform: scale(1.1); box-shadow: 0 1vw 2.4vw rgba(0, 0, 0, .6), 0 0 0 .25vw #fff; }
+.about-card { flex: none; display: flex; flex-direction: column; align-items: flex-start; height: 14vw; padding: 1.4vw; border-radius: 1.4vw; background: rgba(255, 255, 255, .12); color: #fff; text-align: left; box-shadow: inset 0 .06vw 0 rgba(255, 255, 255, .2); }
+.about-card:focus { background: rgba(255, 255, 255, .26); color: #fff; transform: scale(1.04); }
+.about-desc { width: 32vw; }
+.about-desc strong { font-size: 1.35vw; }
+.about-desc .about-sub { font-size: .95vw; color: var(--secondary); margin: .3vh 0 1.2vh; }
+.about-desc p { margin: 0; font-size: 1.05vw; line-height: 1.5; color: rgba(255, 255, 255, .85); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.about-stat { width: 13vw; justify-content: space-between; }
+.about-stat b { font-size: 3.2vw; font-weight: 700; line-height: 1; }
+.about-stat span { font-size: 1.15vw; font-weight: 600; color: rgba(255, 255, 255, .85); }
+#detail-info-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3vw; padding: 3vh var(--gutter) 8vh; overflow-wrap: anywhere; }
+#detail-info-grid h3 { margin: 0 0 1.6vh; font-size: 1.6vw; font-weight: 700; color: rgba(255, 255, 255, .85); }
+#detail-info-grid dt { font-size: .95vw; color: var(--secondary); }
+#detail-info-grid dd { margin: .2vh 0 1.6vh; font-size: 1.1vw; color: #fff; }
+/* The small title rides on a dark fade so rows scrolling underneath do not collide with it. */
+#detail-mini-title { left: 0; right: 0; top: 0; padding: 4vh 25vw 7vh; background: linear-gradient(rgba(0, 0, 0, .75), rgba(0, 0, 0, .45) 55%, transparent); }
+
+/* Settings content for a Bilibili app: option rows show their value on the right before the chevron; the
+   account status is a caption that only appears with something to say; membership sits next to the name. */
+.option-row { display: flex; align-items: center; }
+.option-row .value { margin-left: auto; margin-right: .6vw; color: var(--secondary); }
+.option-row:focus .value { color: #3a3a3c; }
+#page-settings #account-status { min-height: 0; padding: 0 1.5vw; background: transparent; border-radius: 0; font-size: 1.05vw; line-height: 1.5; color: var(--secondary); }
+#page-settings #account-status:empty { display: none; }
+#account-list .row-button .vip { margin-left: .8vw; padding: .1vw .5vw; border-radius: .4vw; background: #fb7299; color: #fff; font-size: .85vw; font-weight: 700; }
+#page-settings .note { margin: .4vh 1.5vw 0; font-size: 1.05vw; line-height: 1.6; color: rgba(235, 235, 245, .75); }
+.key-actions button[aria-pressed="true"] { color: #fff; background: rgba(255, 255, 255, .2); }
+.suggestion.bv { background: rgba(251, 114, 153, .35); }
+/* Danmaku settings: opacity, size and scroll time come from the settings page as custom properties. */
+#danmaku-layer .dm { opacity: var(--dm-opacity, .9); font-size: var(--dm-size, 1.9vw); animation-duration: var(--dm-duration, 9s); }
+#danmaku-layer .dm.fixed { animation-duration: 4s; }
+/* Text capsules over the video (retry, replay, next) carry a darker tint so their words stay legible over
+   busy frames; the round icon buttons stay clear. */
+#player :is(#player-retry, #replay, #play-next).liquid:not(:focus) { background-color: rgba(0, 0, 0, .45); }
+
+/* Quality choices expand upward from the control. */
+.quality-control { position: relative; }
+#quality-menu { position: absolute; right: 0; bottom: calc(100% + 1.5vh); width: 19vw; padding: .6vw; border-radius: 1vw; background: rgba(28, 28, 30, .96); box-shadow: 0 .5vw 2vw rgba(0, 0, 0, .3); animation: quality-rise .15s ease-out; }
+@keyframes quality-rise { from { opacity: 0; transform: translateY(1vh); } to { opacity: 1; transform: translateY(0); } }
+#quality-choices { display: flex; flex-direction: column; gap: .4vh; max-height: 55vh; overflow-y: auto; scrollbar-width: none; padding: .2vw; }
+#controls #quality-choices button { flex: none; width: 100%; margin: 0; padding: 1.2vh 1vw; border-radius: .6vw; text-align: left; background: transparent; }
+#quality-choices button[aria-pressed="true"]::after { content: "✓"; float: right; }
+#controls #quality-choices button:focus { background: #e8e8ed; color: #000; transform: none; }
+#quality-choices button:disabled { opacity: .45; }
+#quality-choices small { float: right; font-size: .85vw; }
+.dolby-vision-icon { display: inline-block; width: 1.8vw; height: 1.35vw; margin-right: .6vw; vertical-align: -.15vw; }
+
+/* Fade under the page pill while scrolled (see app.js). */
+#top-fade { position: fixed; z-index: 7; top: 0; left: 0; right: 0; height: 13vh; background: linear-gradient(rgba(0, 0, 0, .78), rgba(0, 0, 0, .5) 55%, transparent); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+#home.scrolled #top-fade { opacity: 1; }
+#home:has(#sidebar:focus-within) #top-fade { opacity: 0; }
+
+/* Restored from the former add-account intro page at the user's request: the cluster of coloured round
+   avatars, now sitting above the login page title. */
+.add-intro-art { position: relative; width: 18vw; height: 18vw; margin: 0 auto 3vh; }
+.add-intro-art .bubble { position: absolute; display: grid; place-items: center; border-radius: 50%; box-shadow: inset 0 .15vw 0 rgba(255, 255, 255, .25), 0 1vw 2.4vw rgba(0, 0, 0, .35); }
+.add-intro-art .main { left: 28%; top: 27%; width: 46%; height: 46%; background: linear-gradient(135deg, #ff6482, #bf5af2); }
+.add-intro-art .main svg { width: 58%; height: 58%; fill: rgba(255, 255, 255, .9); }
+.add-intro-art .b1 { left: 44%; top: 2%; width: 18%; height: 18%; background: linear-gradient(135deg, #d1d1d6, #8e8e93); }
+.add-intro-art .b2 { left: 2%; top: 22%; width: 26%; height: 26%; background: linear-gradient(135deg, #ffd60a, #ff9f0a); }
+.add-intro-art .b3 { left: 76%; top: 18%; width: 20%; height: 20%; background: linear-gradient(135deg, #30d158, #248a3d); }
+.add-intro-art .b4 { left: 86%; top: 46%; width: 13%; height: 13%; background: linear-gradient(135deg, #ffd60a, #ff9f0a); }
+.add-intro-art .b5 { left: 5%; top: 62%; width: 30%; height: 30%; background: linear-gradient(135deg, #64d2ff, #0a84ff); }
+.add-intro-art .b6 { left: 68%; top: 64%; width: 22%; height: 22%; background: linear-gradient(135deg, #8e8e93, #48484a); }
+
+/* Page titles: as on Apple TV, the top-left pill already names the page, so the large duplicate titles on
+   Library / 分区 headings are kept for screen readers only and the content starts just below the pill. */
+.page > h1:not(.visually-hidden) { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#page-library, #page-regions { padding-top: 12vh; }
+
+#page-popular { padding-top: 12vh; }
+#page-popular > .shelf { margin-top: 0; }
+#video-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3.6vh 1.8vw; overflow: visible; }
+#video-grid .video-card { width: 100%; }
+
+/* Quiet feedback for category requests, delayed to avoid flashes on fast responses. */
+#region-loading { height: .15vw; margin: -2.65vh var(--gutter) 2.5vh; overflow: hidden; opacity: 0; animation: region-feedback-in .2s ease .3s forwards; }
+#region-loading::after { content: ""; display: block; width: 30%; height: 100%; border-radius: 999px; background: rgba(255, 255, 255, .65); animation: region-loading-slide 1.5s ease-in-out infinite; }
+#page-regions > #region-status { color: rgba(255, 255, 255, .65); }
+:is(#region-retry, #recommend-retry, #up-retry) { margin: 1.5vh var(--gutter); font-size: 1.2vw; }
+#library-empty, #library-status[aria-busy="true"], #search-status { color: rgba(235, 235, 245, .78); }
+/* The same delayed, quiet loading line for recommendations, popular, search and library. */
+.shelf.loading::after, :is(#search-status, #library-status)[aria-busy="true"]::after {
+  content: ""; display: block; height: .15vw; border-radius: 999px; opacity: 0;
+  background: linear-gradient(90deg, transparent 30%, rgba(255, 255, 255, .65) 50%, transparent 70%) 100% 0 / 300% 100%;
+  animation: region-feedback-in .2s ease .3s forwards, loading-line 1.5s ease-in-out infinite;
+}
+.shelf.loading::after { position: absolute; top: -.7vh; left: var(--gutter); right: var(--gutter); }
+:is(#search-status, #library-status) { position: relative; }
+:is(#search-status, #library-status)[aria-busy="true"]::after { position: absolute; left: 0; right: 0; bottom: -.6vh; }
+@keyframes loading-line { to { background-position: 0 0; } }
+#region-grid[aria-busy="true"] .video-card { opacity: .45; }
+.region-skeleton { display: flex; flex-direction: column; gap: 1vh; opacity: 0; animation: region-feedback-in .2s ease .3s forwards; }
+.region-skeleton span { display: block; border-radius: .25vw; background: rgba(255, 255, 255, .08); animation: region-skeleton-pulse 1.8s ease-in-out infinite; }
+.region-skeleton .art { aspect-ratio: 16 / 9; border-radius: .8vw; margin-bottom: .5vh; }
+.region-skeleton .title { width: 85%; height: 1.2vw; }
+.region-skeleton .meta { width: 45%; height: .85vw; }
+@keyframes region-feedback-in { to { opacity: 1; } }
+@keyframes region-loading-slide { from { transform: translateX(-100%); } to { transform: translateX(434%); } }
+@keyframes region-skeleton-pulse { 50% { background: rgba(255, 255, 255, .14); } }
+@media (prefers-reduced-motion: reduce) {
+  #region-loading::after, .region-skeleton span { animation: none; }
+  #region-loading::after { width: 100%; }
+  .shelf.loading::after, :is(#search-status, #library-status)[aria-busy="true"]::after {
+    opacity: 1; animation: none; background: rgba(255, 255, 255, .45);
+  }
+  .shelf.loading .row:empty::before, #hero.loading:not(:has(#hero-image[src])) { animation: none; }
+  .video-card, .video-card .art, .video-card:focus .art::after { transition: none; animation: none; }
+}
+
+
+.login-qr[data-state="error"]::after { content: "暂时无法生成二维码"; color: #555; font-size: 1.1vw; text-align: center; padding: 1vw; }
